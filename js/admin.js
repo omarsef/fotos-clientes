@@ -1,8 +1,10 @@
-import { auth, db, CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_UPLOAD_PRESET } from "./firebase-config.js";
+import { auth, db, CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_UPLOAD_PRESET, firebaseConfig } from "./firebase-config.js";
 import {
   onAuthStateChanged, signOut,
-  createUserWithEmailAndPassword
+  createUserWithEmailAndPassword,
+  getAuth
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
   doc, setDoc, getDoc, getDocs, collection,
   updateDoc, increment, query, where
@@ -40,7 +42,7 @@ function init() {
   setupSelecciones();
 }
 
-// ── Crear usuario cliente ────────────────────────────────────
+// ── Crear usuario cliente (sin perder sesión admin) ──────────
 function setupCrearUsuario() {
   document.getElementById("btnCrearUsuario").addEventListener("click", async () => {
     const nombre    = document.getElementById("nuevoNombre").value.trim();
@@ -48,28 +50,39 @@ function setupCrearUsuario() {
     const password  = document.getElementById("nuevaPassword").value;
     const categoria = document.getElementById("nuevaCategoria").value;
     const msg       = document.getElementById("msgUsuario");
+    const btn       = document.getElementById("btnCrearUsuario");
 
     if (!nombre || !email || !password || !categoria) {
       alert("Completá todos los campos."); return;
     }
 
-    try {
-      // Save current admin session
-      const adminUser = auth.currentUser;
+    btn.disabled = true;
+    btn.textContent = "Creando...";
 
-      const cred = await createUserWithEmailAndPassword(auth, email, password);
+    try {
+      // Usamos una segunda app temporal para crear el usuario
+      // sin afectar la sesión del admin
+      const secondaryApp  = initializeApp(firebaseConfig, "secondary");
+      const secondaryAuth = getAuth(secondaryApp);
+
+      const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+
+      // Guardamos en Firestore usando la conexión principal (admin sigue logueado)
       await setDoc(doc(db, "usuarios", cred.user.uid), {
         nombre, email, role: "cliente", categoria, fotosCount: 0, createdAt: new Date()
       });
 
-      // Sign back in as admin (the new user gets auto-signed in by Firebase)
-      // We just reload the page to restore admin session - admin needs to re-login
+      // Cerramos la app secundaria — la sesión admin no se tocó
+      await deleteApp(secondaryApp);
+
       msg.style.display = "block";
-      msg.textContent = `✅ Cliente "${nombre}" creado. (Nota: deberás volver a iniciar sesión como admin)`;
+      msg.textContent = `✅ Cliente "${nombre}" creado correctamente.`;
+      setTimeout(() => { msg.style.display = "none"; }, 3000);
+
       cargarUsuarios();
       popularSelectClientes();
 
-      // Clear fields
+      // Limpiar campos
       document.getElementById("nuevoNombre").value = "";
       document.getElementById("nuevoEmail").value = "";
       document.getElementById("nuevaPassword").value = "";
@@ -77,6 +90,9 @@ function setupCrearUsuario() {
 
     } catch (err) {
       alert("Error: " + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Crear cliente";
     }
   });
 }
