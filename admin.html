@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Panel Admin · TresEles</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    .admin-topbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 32px;
+      background: #111; border-bottom: 1px solid #222;
+    }
+    .admin-topbar .logo { font-size:1.2rem; font-weight:700; letter-spacing:3px; color:#fff; }
+    .admin-topbar .logo span { color:#c9a84c; }
+    .admin-topbar .user-info { display:flex; align-items:center; gap:16px; }
+    .admin-topbar .user-info span { color:#888; font-size:0.85rem; }
+
+    .card {
+      background: #161616; border:1px solid #222; border-radius:6px; padding:24px; margin-bottom:20px;
+    }
+    .card h3 { font-size:0.85rem; letter-spacing:2px; text-transform:uppercase; color:#888; margin-bottom:18px; }
+
+    .input-field {
+      width:100%; padding:10px 14px; background:#0d0d0d; border:1px solid #333;
+      border-radius:4px; color:#fff; font-size:0.9rem; margin-bottom:12px;
+    }
+    .input-field:focus { outline:none; border-color:#c9a84c; }
+
+    select.input-field { cursor:pointer; }
+
+    .btn-gold {
+      padding:10px 22px; background:#c9a84c; border:none; border-radius:4px;
+      color:#000; font-size:0.82rem; font-weight:700; letter-spacing:2px;
+      text-transform:uppercase; cursor:pointer; transition:background 0.2s;
+    }
+    .btn-gold:hover { background:#e0be6a; }
+
+    .btn-danger {
+      padding:8px 16px; background:transparent; border:1px solid #c0392b;
+      border-radius:4px; color:#c0392b; font-size:0.78rem; letter-spacing:1px;
+      cursor:pointer; transition:all 0.2s;
+    }
+    .btn-danger:hover { background:#c0392b; color:#fff; }
+
+    table { width:100%; border-collapse:collapse; }
+    th { text-align:left; font-size:0.75rem; letter-spacing:1px; text-transform:uppercase; color:#555; padding-bottom:12px; border-bottom:1px solid #222; }
+    td { padding:12px 0; border-bottom:1px solid #1a1a1a; color:#ccc; font-size:0.9rem; vertical-align:middle; }
+    tr:last-child td { border-bottom:none; }
+
+    .upload-zone {
+      border:2px dashed #333; border-radius:6px; padding:40px;
+      text-align:center; cursor:pointer; transition:border-color 0.2s;
+    }
+    .upload-zone:hover { border-color:#c9a84c; }
+    .upload-zone p { color:#666; font-size:0.9rem; }
+    .upload-zone p span { color:#c9a84c; }
+    #fileInput { display:none; }
+
+    .progress-bar-wrap { background:#222; border-radius:20px; height:6px; margin:8px 0; }
+    .progress-bar { background:#c9a84c; height:6px; border-radius:20px; width:0%; transition:width 0.3s; }
+
+    .foto-thumb { width:60px; height:45px; object-fit:cover; border-radius:3px; }
+    .status-badge {
+      display:inline-block; padding:3px 10px; border-radius:20px; font-size:0.75rem;
+    }
+    .status-selected { background:#1a3a1a; color:#6fcf97; }
+    .status-pending { background:#2a2a1a; color:#f2c94c; }
+
+    #uploadStatus { margin-top:12px; color:#888; font-size:0.85rem; }
+    .tabs { display:flex; gap:4px; margin-bottom:24px; }
+    .tab-btn {
+      padding:9px 20px; border:1px solid #333; border-radius:4px; background:transparent;
+      color:#888; font-size:0.82rem; letter-spacing:1px; text-transform:uppercase; cursor:pointer; transition:all 0.2s;
+    }
+    .tab-btn.active { border-color:#c9a84c; color:#c9a84c; background:rgba(201,168,76,0.07); }
+    .tab-panel { display:none; }
+    .tab-panel.active { display:block; }
+  </style>
+</head>
+<body>
+
+  <!-- TOPBAR -->
+  <header class="admin-topbar">
+    <div class="logo">TRES<span>ELES</span> <span style="color:#555;font-size:0.75rem;margin-left:12px;letter-spacing:2px;">ADMIN</span></div>
+    <div class="user-info">
+      <span id="adminEmail"></span>
+      <button class="btn-secondary" id="btnLogout" onclick="logout()">Salir</button>
+    </div>
+  </header>
+
+  <div class="admin-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <h3>Panel</h3>
+      <a href="#" class="active" data-tab="usuarios">👤 Usuarios</a>
+      <a href="#" data-tab="subir">📤 Subir Fotos</a>
+      <a href="#" data-tab="galerias">🖼 Galerías</a>
+      <a href="#" data-tab="selecciones">✅ Selecciones</a>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main-content">
+
+      <!-- TAB: USUARIOS -->
+      <div class="tab-panel active" id="tab-usuarios">
+        <h1>Gestión de Usuarios</h1>
+
+        <div class="card">
+          <h3>Crear nuevo cliente</h3>
+          <input class="input-field" type="text"  id="nuevoNombre"  placeholder="Nombre completo" />
+          <input class="input-field" type="email" id="nuevoEmail"   placeholder="Email del cliente" />
+          <input class="input-field" type="password" id="nuevaPassword" placeholder="Contraseña (mín. 6 caracteres)" />
+          <select class="input-field" id="nuevaCategoria">
+            <option value="">-- Categoría / Disciplina --</option>
+            <option value="escolar">Escolar</option>
+            <option value="social">Social</option>
+            <option value="deportiva">Deportiva</option>
+            <option value="artistica">Artística</option>
+          </select>
+          <button class="btn-gold" id="btnCrearUsuario">Crear cliente</button>
+          <p id="msgUsuario" style="margin-top:10px; font-size:0.85rem; color:#6fcf97; display:none;"></p>
+        </div>
+
+        <div class="card">
+          <h3>Clientes registrados</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Email</th>
+                <th>Categoría</th>
+                <th>Fotos</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tablaUsuarios">
+              <tr><td colspan="5" style="color:#555;">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB: SUBIR FOTOS -->
+      <div class="tab-panel" id="tab-subir">
+        <h1>Subir Fotos</h1>
+
+        <div class="card">
+          <h3>Seleccionar cliente</h3>
+          <select class="input-field" id="clienteParaSubir">
+            <option value="">-- Seleccioná un cliente --</option>
+          </select>
+        </div>
+
+        <div class="card">
+          <h3>Cargar imágenes</h3>
+          <div class="upload-zone" id="uploadZone">
+            <p>📷 Arrastrá las fotos acá o <span>hacé clic para seleccionar</span></p>
+            <p style="margin-top:8px; font-size:0.78rem; color:#555;">Se subirán en baja calidad con marca de agua automáticamente</p>
+          </div>
+          <input type="file" id="fileInput" multiple accept="image/*" />
+          <div id="uploadStatus"></div>
+        </div>
+      </div>
+
+      <!-- TAB: GALERIAS -->
+      <div class="tab-panel" id="tab-galerias">
+        <h1>Galerías por cliente</h1>
+        <div class="card">
+          <h3>Seleccionar cliente</h3>
+          <select class="input-field" id="clienteParaGaleria">
+            <option value="">-- Seleccioná un cliente --</option>
+          </select>
+          <button class="btn-gold" style="margin-top:4px;" id="btnVerGaleria">Ver galería</button>
+        </div>
+        <div class="card">
+          <div id="galeriaAdmin" class="gallery-grid"></div>
+        </div>
+      </div>
+
+      <!-- TAB: SELECCIONES -->
+      <div class="tab-panel" id="tab-selecciones">
+        <h1>Fotos Seleccionadas</h1>
+        <div class="card">
+          <h3>Seleccionar cliente</h3>
+          <select class="input-field" id="clienteSelecciones">
+            <option value="">-- Seleccioná un cliente --</option>
+          </select>
+          <button class="btn-gold" style="margin-top:4px;" id="btnVerSelecciones">Ver selecciones</button>
+        </div>
+        <div class="card">
+          <h3>Fotos marcadas para imprimir</h3>
+          <div id="listaSelecciones" class="gallery-grid"></div>
+          <p id="msgSelecciones" style="color:#555; font-size:0.9rem; display:none;">Este cliente aún no seleccionó fotos.</p>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>
