@@ -11,10 +11,9 @@ let fotos         = [];
 let seleccionadas = new Set();
 let lightboxIdx   = -1;
 
-// ── Bloquear clic derecho en toda la página ───────────────────
-document.addEventListener("contextmenu", (e) => {
-  if (e.target.tagName === "IMG") e.preventDefault();
-});
+// ── Bloquear clic derecho y arrastre en TODO el sitio ─────────
+document.addEventListener("contextmenu", e => e.preventDefault());
+document.addEventListener("dragstart", e => { if (e.target.tagName === "IMG") e.preventDefault(); });
 
 // ── Auth guard ───────────────────────────────────────────────
 onAuthStateChanged(auth, async (user) => {
@@ -30,11 +29,70 @@ onAuthStateChanged(auth, async (user) => {
   document.getElementById("clientName").textContent  = data.nombre || user.email;
 
   cargarFotos();
+  cargarFotosGrupales();
 });
 
 window.logout = async () => { await signOut(auth); window.location.href = "login.html"; };
 
-// ── Cargar galería ───────────────────────────────────────────
+// ── Cargar fotos grupales ────────────────────────────────────
+async function cargarFotosGrupales() {
+  if (!currentUser.grupoId) return;
+
+  const container = document.getElementById("galeriaGrupal");
+  const section   = document.getElementById("seccionGrupal");
+  if (!container || !section) return;
+
+  const snap = await getDocs(query(
+    collection(db, "fotosGrupales"),
+    where("grupoId", "==", currentUser.grupoId)
+  ));
+
+  if (snap.empty) return;
+
+  section.style.display = "block";
+  snap.forEach((d, idx) => {
+    const foto = d.data();
+    if (foto.eliminado) return;
+    const div = document.createElement("div");
+    div.className = "gallery-item";
+    div.innerHTML = `<img src="${foto.url}" alt="foto grupal" loading="lazy" draggable="false" /><div class="zoom-hint">🔍</div>`;
+    div.addEventListener("dblclick", () => abrirLightboxGrupal(d.id, snap));
+    div.querySelector(".zoom-hint").addEventListener("click", () => abrirLightboxGrupal(d.id, snap));
+    container.appendChild(div);
+  });
+}
+
+function abrirLightboxGrupal(fotoId, snap) {
+  const fotos = [];
+  snap.forEach(d => { if (!d.data().eliminado) fotos.push({ id: d.id, ...d.data() }); });
+  const idx = fotos.findIndex(f => f.id === fotoId);
+  if (idx < 0) return;
+
+  const foto = fotos[idx];
+  const img  = document.getElementById("lightboxImg");
+  img.src = foto.url;
+  img.draggable = false;
+  document.getElementById("lightbox").classList.add("open");
+  document.getElementById("lightboxCounter").textContent = `${idx + 1} / ${fotos.length}`;
+  document.getElementById("lightboxSelect").style.display = "none";
+
+  document.getElementById("lightboxPrev").onclick = () => {
+    const ni = idx - 1;
+    if (ni >= 0) abrirLightboxGrupal(fotos[ni].id, snap);
+  };
+  document.getElementById("lightboxNext").onclick = () => {
+    const ni = idx + 1;
+    if (ni < fotos.length) abrirLightboxGrupal(fotos[ni].id, snap);
+  };
+
+  document.onkeydown = (e) => {
+    if (e.key === "ArrowRight" && idx + 1 < fotos.length) abrirLightboxGrupal(fotos[idx+1].id, snap);
+    if (e.key === "ArrowLeft"  && idx - 1 >= 0)           abrirLightboxGrupal(fotos[idx-1].id, snap);
+    if (e.key === "Escape") cerrarLightbox();
+  };
+}
+
+// ── Cargar fotos personales ──────────────────────────────────
 async function cargarFotos() {
   const container = document.getElementById("galeriaCliente");
   const empty     = document.getElementById("emptyState");
@@ -142,7 +200,9 @@ function abrirLightbox(idx) {
   document.getElementById("lightbox").classList.add("open");
   document.getElementById("lightboxCounter").textContent = `${idx + 1} / ${fotos.length}`;
 
+  // Restaurar botón seleccionar (puede estar oculto si se abrió desde grupales)
   const btnSel = document.getElementById("lightboxSelect");
+  btnSel.style.display = "";
   actualizarBtnLightbox(btnSel, foto.id);
   btnSel.onclick = () => {
     toggleSeleccion(foto.id);

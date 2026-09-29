@@ -44,6 +44,7 @@ function init() {
   setupGaleriaAdmin();
   setupSelecciones();
   setupAnalytics();
+  setupFotosGrupales();
 }
 
 // ══════════════════════════════════════════════════════
@@ -70,6 +71,7 @@ function setupCrearGrupo() {
 
     cargarGrupos();
     popularSelectGrupos();
+    popularSelectGruposFotosGrupales();
   });
 }
 
@@ -135,6 +137,20 @@ window.eliminarGrupo = async (id, nombre) => {
   await setDoc(doc(db, "grupos", id), { eliminado: true }, { merge: true });
   cargarGrupos();
 };
+
+async function popularSelectGruposFotosGrupales() {
+  const sel  = document.getElementById("grupoParaFotosGrupales");
+  if (!sel) return;
+  const snap = await getDocs(collection(db, "grupos"));
+  sel.innerHTML = '<option value="">-- Seleccioná un grupo --</option>';
+  snap.forEach(d => {
+    if (d.data().eliminado) return;
+    const opt = document.createElement("option");
+    opt.value = d.id;
+    opt.textContent = d.data().nombre;
+    sel.appendChild(opt);
+  });
+}
 
 async function popularSelectGrupos() {
   const selects = ["nuevoGrupo", "grupoAnalytics"];
@@ -241,7 +257,10 @@ async function cargarUsuarios() {
       <td><span class="tag tag-cliente">${u.categoria || "-"}</span></td>
       <td style="color:#888;font-size:0.82rem">${grupoNombre}</td>
       <td>${u.fotosCount || 0}</td>
-      <td><button class="btn-danger" onclick="eliminarUsuario('${d.id}','${u.nombre}')">Eliminar</button></td>
+      <td style="display:flex;gap:8px;">
+        <button class="btn-secondary" style="padding:6px 12px;font-size:0.75rem;" onclick="editarCliente('${d.id}')">✏️ Editar</button>
+        <button class="btn-danger" onclick="eliminarUsuario('${d.id}','${u.nombre}')">Eliminar</button>
+      </td>
     `;
     tbody.appendChild(tr);
   });
@@ -367,33 +386,41 @@ function setupGaleriaAdmin() {
 }
 
 // ══════════════════════════════════════════════════════
-// SELECCIONES
+// SELECCIONES (auto-carga al cambiar cliente)
 // ══════════════════════════════════════════════════════
 function setupSelecciones() {
-  document.getElementById("btnVerSelecciones").addEventListener("click", async () => {
-    const clienteId = document.getElementById("clienteSelecciones").value;
-    if (!clienteId) { alert("Seleccioná un cliente."); return; }
+  document.getElementById("clienteSelecciones").addEventListener("change", () => {
+    verSelecciones();
+  });
+  document.getElementById("btnVerSelecciones").addEventListener("click", verSelecciones);
+}
 
-    const container = document.getElementById("listaSelecciones");
-    const msg       = document.getElementById("msgSelecciones");
-    container.innerHTML = "";
-    msg.style.display = "none";
+async function verSelecciones() {
+  const clienteId = document.getElementById("clienteSelecciones").value;
+  const container = document.getElementById("listaSelecciones");
+  const msg       = document.getElementById("msgSelecciones");
+  container.innerHTML = "";
+  msg.style.display = "none";
 
-    const snap = await getDocs(query(
-      collection(db, "fotos"),
-      where("clienteId", "==", clienteId),
-      where("seleccionada", "==", true)
-    ));
+  if (!clienteId) return;
 
-    if (snap.empty) { msg.style.display = "block"; return; }
+  container.innerHTML = "<p style='color:#555'>Cargando...</p>";
 
-    snap.forEach(d => {
-      const foto = d.data();
-      const div  = document.createElement("div");
-      div.className = "gallery-item selected";
-      div.innerHTML = `<img src="${foto.url}" alt="foto seleccionada" /><div class="check">✓</div>`;
-      container.appendChild(div);
-    });
+  const snap = await getDocs(query(
+    collection(db, "fotos"),
+    where("clienteId", "==", clienteId),
+    where("seleccionada", "==", true)
+  ));
+
+  container.innerHTML = "";
+  if (snap.empty) { msg.style.display = "block"; return; }
+
+  snap.forEach(d => {
+    const foto = d.data();
+    const div  = document.createElement("div");
+    div.className = "gallery-item selected";
+    div.innerHTML = `<img src="${foto.url}" alt="foto seleccionada" /><div class="check">✓</div>`;
+    container.appendChild(div);
   });
 }
 
@@ -483,3 +510,157 @@ async function cargarAnalytics() {
     container.appendChild(div);
   });
 }
+
+// ══════════════════════════════════════════════════════
+// EDITAR CLIENTE
+// ══════════════════════════════════════════════════════
+window.editarCliente = async (uid) => {
+  const snap = await getDoc(doc(db, "usuarios", uid));
+  if (!snap.exists()) return;
+  const u = snap.data();
+
+  // Populate modal
+  document.getElementById("editUid").value       = uid;
+  document.getElementById("editNombre").value    = u.nombre || "";
+  document.getElementById("editEmail").value     = u.email  || "";
+  document.getElementById("editCategoria").value = u.categoria || "";
+
+  // Populate grupo select
+  const gruposSnap = await getDocs(collection(db, "grupos"));
+  const sel = document.getElementById("editGrupo");
+  sel.innerHTML = '<option value="">-- Sin grupo --</option>';
+  gruposSnap.forEach(d => {
+    if (d.data().eliminado) return;
+    const opt = document.createElement("option");
+    opt.value = d.id;
+    opt.textContent = d.data().nombre;
+    if (d.id === u.grupoId) opt.selected = true;
+    sel.appendChild(opt);
+  });
+
+  document.getElementById("editModal").style.display = "flex";
+};
+
+window.cerrarEditModal = () => {
+  document.getElementById("editModal").style.display = "none";
+};
+
+// Guardar edición
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("editForm");
+  if (form) {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const uid      = document.getElementById("editUid").value;
+      const nombre   = document.getElementById("editNombre").value.trim();
+      const categoria= document.getElementById("editCategoria").value;
+      const grupoId  = document.getElementById("editGrupo").value;
+
+      await updateDoc(doc(db, "usuarios", uid), {
+        nombre, categoria, grupoId: grupoId || null
+      });
+
+      cerrarEditModal();
+      cargarUsuarios();
+    });
+  }
+});
+
+// ══════════════════════════════════════════════════════
+// FOTOS GRUPALES
+// ══════════════════════════════════════════════════════
+window.setupFotosGrupales = setupFotosGrupales;
+
+function setupFotosGrupales() {
+  const zone  = document.getElementById("uploadZoneGrupal");
+  const input = document.getElementById("fileInputGrupal");
+  if (!zone || !input) return;
+
+  zone.addEventListener("click", () => input.click());
+  zone.addEventListener("dragover", e => { e.preventDefault(); zone.style.borderColor = "#c9a84c"; });
+  zone.addEventListener("dragleave", () => { zone.style.borderColor = "#333"; });
+  zone.addEventListener("drop", e => {
+    e.preventDefault();
+    zone.style.borderColor = "#333";
+    handleFotosGrupales(e.dataTransfer.files);
+  });
+  input.addEventListener("change", () => handleFotosGrupales(input.files));
+
+  document.getElementById("grupoParaFotosGrupales").addEventListener("change", cargarFotosGrupalesAdmin);
+}
+
+async function handleFotosGrupales(files) {
+  const grupoId = document.getElementById("grupoParaFotosGrupales").value;
+  if (!grupoId) { alert("Seleccioná un grupo primero."); return; }
+
+  const statusEl = document.getElementById("uploadStatusGrupal");
+  const total = files.length;
+  let done = 0;
+
+  statusEl.innerHTML = `
+    <p style="margin-top:12px;color:#aaa">Subiendo ${total} foto(s) grupales...</p>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="progBarGrupal"></div></div>
+  `;
+
+  for (const file of files) {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+    formData.append("folder", `grupos/${grupoId}`);
+    formData.append("quality", "40");
+    formData.append("width", "1200");
+    formData.append("crop", "limit");
+
+    try {
+      const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, { method: "POST", body: formData });
+      const data = await res.json();
+
+      if (data.secure_url) {
+        const fotoId = data.public_id.replace(/\//g, "_");
+        await setDoc(doc(db, "fotosGrupales", fotoId), {
+          grupoId, url: data.secure_url, publicId: data.public_id, uploadedAt: new Date()
+        });
+      }
+    } catch (err) {
+      console.error("Error subiendo foto grupal:", err);
+    }
+
+    done++;
+    const bar = document.getElementById("progBarGrupal");
+    if (bar) bar.style.width = Math.round((done / total) * 100) + "%";
+  }
+
+  statusEl.innerHTML += `<p style="color:#6fcf97;margin-top:8px;">✅ ${done} foto(s) grupales subidas.</p>`;
+  cargarFotosGrupalesAdmin();
+}
+
+async function cargarFotosGrupalesAdmin() {
+  const grupoId   = document.getElementById("grupoParaFotosGrupales").value;
+  const container = document.getElementById("galeriaGrupal");
+  if (!container) return;
+
+  container.innerHTML = "<p style='color:#555'>Cargando...</p>";
+  if (!grupoId) { container.innerHTML = ""; return; }
+
+  const snap = await getDocs(query(collection(db, "fotosGrupales"), where("grupoId", "==", grupoId)));
+  if (snap.empty) { container.innerHTML = "<p style='color:#555'>No hay fotos grupales aún.</p>"; return; }
+
+  container.innerHTML = "";
+  snap.forEach(d => {
+    const foto = d.data();
+    const div  = document.createElement("div");
+    div.className = "gallery-item";
+    div.style.position = "relative";
+    div.innerHTML = `
+      <img src="${foto.url}" alt="foto grupal" />
+      <button onclick="eliminarFotoGrupal('${d.id}')" style="position:absolute;top:6px;right:6px;background:rgba(192,57,43,0.85);border:none;color:#fff;border-radius:4px;padding:4px 8px;font-size:0.75rem;cursor:pointer;">✕</button>
+    `;
+    container.appendChild(div);
+  });
+}
+
+window.eliminarFotoGrupal = async (id) => {
+  if (!confirm("¿Eliminar esta foto grupal?")) return;
+  await setDoc(doc(db, "fotosGrupales", id), { eliminado: true }, { merge: true });
+  cargarFotosGrupalesAdmin();
+};

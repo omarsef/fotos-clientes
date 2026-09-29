@@ -120,7 +120,8 @@
       <a href="#" class="active" data-tab="grupos">📁 Grupos</a>
       <a href="#" data-tab="usuarios">👤 Clientes</a>
       <a href="#" data-tab="subir">📤 Subir Fotos</a>
-      <a href="#" data-tab="galerias">🖼 Galerías</a>
+      <a href="#" data-tab="fotosgrp">🖼 Fotos Grupales</a>
+      <a href="#" data-tab="galerias">👁 Galerías</a>
       <a href="#" data-tab="selecciones">✅ Selecciones</a>
       <a href="#" data-tab="analytics">📊 Analytics</a>
     </aside>
@@ -240,12 +241,36 @@
           <select class="input-field" id="clienteSelecciones">
             <option value="">-- Seleccioná un cliente --</option>
           </select>
-          <button class="btn-gold" style="margin-top:4px;" id="btnVerSelecciones">Ver selecciones</button>
+          <button class="btn-gold" style="margin-top:4px;" id="btnVerSelecciones">Actualizar</button>
         </div>
         <div class="card">
           <h3>Fotos marcadas para imprimir</h3>
           <div id="listaSelecciones" class="gallery-grid"></div>
           <p id="msgSelecciones" style="color:#555;font-size:0.9rem;display:none;">Este cliente aún no seleccionó fotos.</p>
+        </div>
+      </div>
+
+      <!-- TAB: FOTOS GRUPALES -->
+      <div class="tab-panel" id="tab-fotosgrp">
+        <h1>Fotos Grupales</h1>
+        <div class="card">
+          <h3>Seleccionar grupo</h3>
+          <select class="input-field" id="grupoParaFotosGrupales">
+            <option value="">-- Seleccioná un grupo --</option>
+          </select>
+        </div>
+        <div class="card">
+          <h3>Subir fotos del grupo</h3>
+          <div class="upload-zone" id="uploadZoneGrupal">
+            <p>🖼 Arrastrá las fotos grupales acá o <span>hacé clic para seleccionar</span></p>
+            <p style="margin-top:8px;font-size:0.78rem;color:#555;">Fotos en común para todos los clientes del grupo (fotos del acto, foto grupal, etc.)</p>
+          </div>
+          <input type="file" id="fileInputGrupal" multiple accept="image/*" />
+          <div id="uploadStatusGrupal"></div>
+        </div>
+        <div class="card">
+          <h3>Fotos grupales cargadas</h3>
+          <div id="galeriaGrupal" class="gallery-grid"></div>
         </div>
       </div>
 
@@ -277,6 +302,42 @@
 
     </main>
   </div>
+
+  <!-- MODAL EDITAR CLIENTE -->
+  <div id="editModal" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;">
+    <div style="background:#161616;border:1px solid #333;border-radius:8px;padding:36px 40px;width:100%;max-width:440px;">
+      <h3 style="font-size:0.85rem;letter-spacing:2px;text-transform:uppercase;color:#888;margin-bottom:20px;">Editar cliente</h3>
+      <form id="editForm">
+        <input type="hidden" id="editUid" />
+        <label style="font-size:0.78rem;color:#888;letter-spacing:1px;text-transform:uppercase;">Nombre</label>
+        <input class="input-field" type="text" id="editNombre" required style="margin-top:6px;" />
+        <label style="font-size:0.78rem;color:#888;letter-spacing:1px;text-transform:uppercase;">Email (solo lectura)</label>
+        <input class="input-field" type="email" id="editEmail" disabled style="margin-top:6px;opacity:0.5;" />
+        <label style="font-size:0.78rem;color:#888;letter-spacing:1px;text-transform:uppercase;">Categoría</label>
+        <select class="input-field" id="editCategoria" style="margin-top:6px;">
+          <option value="escolar">Escolar</option>
+          <option value="social">Social</option>
+          <option value="deportiva">Deportiva</option>
+          <option value="artistica">Artística</option>
+        </select>
+        <label style="font-size:0.78rem;color:#888;letter-spacing:1px;text-transform:uppercase;">Grupo</label>
+        <select class="input-field" id="editGrupo" style="margin-top:6px;">
+          <option value="">-- Sin grupo --</option>
+        </select>
+        <div style="display:flex;gap:12px;margin-top:20px;">
+          <button type="submit" class="btn-gold" style="flex:1;">Guardar cambios</button>
+          <button type="button" onclick="cerrarEditModal()" class="btn-secondary" style="flex:1;">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Bloquear clic derecho en TODO el sitio
+    document.addEventListener("contextmenu", e => e.preventDefault());
+    // Bloquear arrastrar imágenes
+    document.addEventListener("dragstart", e => { if (e.target.tagName === "IMG") e.preventDefault(); });
+  </script>
 
   <script type="module" src="js/admin.js"></script>
 </body>
