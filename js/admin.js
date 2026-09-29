@@ -377,24 +377,113 @@ async function handleFiles(files) {
 // GALERÍA ADMIN
 // ══════════════════════════════════════════════════════
 function setupGaleriaAdmin() {
-  document.getElementById("btnVerGaleria").addEventListener("click", async () => {
-    const clienteId = document.getElementById("clienteParaGaleria").value;
-    if (!clienteId) { alert("Seleccioná un cliente."); return; }
+  // Poblar selects y cargar todas las fotos al entrar a la tab
+  document.querySelectorAll(".sidebar a").forEach(a => {
+    if (a.dataset.tab === "galerias") {
+      a.addEventListener("click", () => {
+        popularSelectClientesGaleria();
+        popularSelectGruposGaleria();
+        cargarGaleriaAdmin();
+      }, { once: false });
+    }
+  });
 
-    const container = document.getElementById("galeriaAdmin");
-    container.innerHTML = "<p style='color:#555'>Cargando...</p>";
+  // Filtrar al cambiar cliente
+  document.getElementById("clienteParaGaleria").addEventListener("change", () => {
+    // Si se selecciona cliente, limpiar grupo y viceversa
+    document.getElementById("grupoParaGaleria").value = "";
+    cargarGaleriaAdmin();
+  });
 
-    const snap = await getDocs(query(collection(db, "fotos"), where("clienteId", "==", clienteId)));
-    if (snap.empty) { container.innerHTML = "<p style='color:#555'>No hay fotos para este cliente.</p>"; return; }
+  // Filtrar al cambiar grupo
+  document.getElementById("grupoParaGaleria").addEventListener("change", async () => {
+    document.getElementById("clienteParaGaleria").value = "";
+    const grupoId = document.getElementById("grupoParaGaleria").value;
+    if (!grupoId) { cargarGaleriaAdmin(); return; }
 
-    container.innerHTML = "";
-    snap.forEach(d => {
-      const foto = d.data();
-      const div  = document.createElement("div");
-      div.className = "gallery-item" + (foto.seleccionada ? " selected" : "");
-      div.innerHTML = `<img src="${foto.url}" alt="foto" /><div class="check">✓</div>`;
-      container.appendChild(div);
-    });
+    // Obtener clientes del grupo y mostrar sus fotos
+    const cSnap = await getDocs(query(
+      collection(db, "usuarios"),
+      where("grupoId", "==", grupoId),
+      where("role", "==", "cliente")
+    ));
+    const clienteIds = cSnap.docs.map(d => d.id);
+    cargarGaleriaAdmin(null, clienteIds);
+  });
+}
+
+async function popularSelectClientesGaleria() {
+  const sel  = document.getElementById("clienteParaGaleria");
+  const snap = await getDocs(query(collection(db, "usuarios"), where("role", "==", "cliente")));
+  sel.innerHTML = '<option value="">-- Todos los clientes --</option>';
+  snap.forEach(d => {
+    if (d.data().eliminado) return;
+    const opt = document.createElement("option");
+    opt.value = d.id;
+    opt.textContent = d.data().nombre + " (" + (d.data().categoria || "-") + ")";
+    sel.appendChild(opt);
+  });
+}
+
+async function popularSelectGruposGaleria() {
+  const sel  = document.getElementById("grupoParaGaleria");
+  const snap = await getDocs(collection(db, "grupos"));
+  sel.innerHTML = '<option value="">-- Todos los grupos --</option>';
+  snap.forEach(d => {
+    if (d.data().eliminado) return;
+    const opt = document.createElement("option");
+    opt.value = d.id;
+    opt.textContent = d.data().nombre;
+    sel.appendChild(opt);
+  });
+}
+
+async function cargarGaleriaAdmin(clienteId = null, clienteIds = null) {
+  const container = document.getElementById("galeriaAdmin");
+  const empty     = document.getElementById("galeriaEmpty");
+  const contador  = document.getElementById("galeriaContador");
+  container.innerHTML = "<p style='color:#555'>Cargando...</p>";
+  empty.style.display = "none";
+
+  // Si no se pasó clienteId, tomarlo del select
+  if (!clienteId) clienteId = document.getElementById("clienteParaGaleria").value;
+
+  let snap;
+  if (clienteId) {
+    // Filtro por cliente específico
+    snap = await getDocs(query(collection(db, "fotos"), where("clienteId", "==", clienteId)));
+  } else if (clienteIds && clienteIds.length > 0) {
+    // Filtro por grupo (múltiples clientes) — Firestore no soporta "in" con más de 10
+    const chunks = [];
+    for (let i = 0; i < clienteIds.length; i += 10) chunks.push(clienteIds.slice(i, i + 10));
+    const docs = [];
+    for (const chunk of chunks) {
+      const s = await getDocs(query(collection(db, "fotos"), where("clienteId", "in", chunk)));
+      s.forEach(d => docs.push(d));
+    }
+    snap = { docs, empty: docs.length === 0 };
+  } else {
+    // Mostrar todas
+    snap = await getDocs(collection(db, "fotos"));
+  }
+
+  container.innerHTML = "";
+  const fotos = snap.docs || (snap.forEach ? [] : []);
+  if (snap.forEach) snap.forEach(d => fotos.push(d));
+
+  if (fotos.length === 0) {
+    empty.style.display = "block";
+    contador.textContent = "";
+    return;
+  }
+
+  contador.textContent = `${fotos.length} foto(s)`;
+  fotos.forEach(d => {
+    const foto = d.data();
+    const div  = document.createElement("div");
+    div.className = "gallery-item" + (foto.seleccionada ? " selected" : "");
+    div.innerHTML = `<img src="${foto.url}" alt="foto" /><div class="check">✓</div>`;
+    container.appendChild(div);
   });
 }
 

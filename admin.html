@@ -264,16 +264,27 @@
 
       <!-- TAB: GALERIAS -->
       <div class="tab-panel" id="tab-galerias">
-        <h1>Galerías por cliente</h1>
-        <div class="card">
-          <h3>Seleccionar cliente</h3>
-          <select class="input-field" id="clienteParaGaleria">
-            <option value="">-- Seleccioná un cliente --</option>
-          </select>
-          <button class="btn-gold" style="margin-top:4px;" id="btnVerGaleria">Ver galería</button>
+        <h1>Galerías</h1>
+        <div class="card" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+          <div style="flex:1;min-width:200px;">
+            <h3 style="margin-bottom:10px;">Filtrar por cliente</h3>
+            <select class="input-field" id="clienteParaGaleria" style="margin-bottom:0;">
+              <option value="">-- Todos los clientes --</option>
+            </select>
+          </div>
+          <div style="flex:1;min-width:200px;">
+            <h3 style="margin-bottom:10px;">Filtrar por grupo</h3>
+            <select class="input-field" id="grupoParaGaleria" style="margin-bottom:0;">
+              <option value="">-- Todos los grupos --</option>
+            </select>
+          </div>
         </div>
         <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <p id="galeriaContador" style="color:#666;font-size:0.82rem;letter-spacing:1px;"></p>
+          </div>
           <div id="galeriaAdmin" class="gallery-grid"></div>
+          <p id="galeriaEmpty" style="color:#555;font-size:0.9rem;display:none;">No hay fotos para mostrar.</p>
         </div>
       </div>
 
