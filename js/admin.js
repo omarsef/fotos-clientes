@@ -349,6 +349,72 @@ function setupSubirFotos() {
     handleFiles(e.dataTransfer.files);
   });
   input.addEventListener("change", () => handleFiles(input.files));
+
+  // Mostrar fotos del cliente seleccionado al cambiar el select
+  document.getElementById("clienteParaSubir").addEventListener("change", () => {
+    mostrarFotasDelCliente();
+  });
+}
+
+// ── Helper: construir HTML del tooltip ───────────────────────
+function tooltipHtml({ cliente, grupo, fecha, seleccionada, tipo }) {
+  let html = "";
+  if (cliente)    html += `<div><span class="tt-label">Cliente</span><br/><span class="tt-value">${cliente}</span></div>`;
+  if (grupo)      html += `<div><span class="tt-label">Grupo</span><br/><span class="tt-value">${grupo}</span></div>`;
+  if (tipo)       html += `<div><span class="tt-label">Tipo</span><br/><span class="tt-value">${tipo}</span></div>`;
+  if (fecha)      html += `<div><span class="tt-label">Subida</span><br/><span class="tt-value">${fecha}</span></div>`;
+  if (seleccionada !== undefined) {
+    html += `<div style="margin-top:4px;"><span class="${seleccionada ? "tt-sel" : "tt-label"}">${seleccionada ? "✓ Seleccionada" : "Sin seleccionar"}</span></div>`;
+  }
+  return html;
+}
+
+async function mostrarFotasDelCliente() {
+  const sel       = document.getElementById("clienteParaSubir");
+  const clienteId = sel.value;
+  const card      = document.getElementById("cardFotosSubidas");
+  const grid      = document.getElementById("gridFotosSubidas");
+  const empty     = document.getElementById("emptyFotosSubidas");
+  const nombre    = document.getElementById("nombreClienteSubidas");
+  const contador  = document.getElementById("contadorFotasSubidas");
+
+  if (!clienteId) { card.style.display = "none"; return; }
+
+  const selectedOpt    = sel.options[sel.selectedIndex];
+  const clienteNombre  = selectedOpt.textContent;
+  nombre.textContent   = clienteNombre;
+  card.style.display   = "block";
+  grid.innerHTML = "<p style='color:#555;font-size:0.85rem;'>Cargando...</p>";
+  empty.style.display  = "none";
+
+  // Obtener grupo del cliente
+  const uSnap    = await getDoc(doc(db, "usuarios", clienteId));
+  const grupoId  = uSnap.exists() ? uSnap.data().grupoId : null;
+  let   grupoNombre = "-";
+  if (grupoId) {
+    const gSnap = await getDoc(doc(db, "grupos", grupoId));
+    if (gSnap.exists()) grupoNombre = gSnap.data().nombre;
+  }
+
+  const snap = await getDocs(query(collection(db, "fotos"), where("clienteId", "==", clienteId)));
+
+  grid.innerHTML = "";
+  if (snap.empty) {
+    empty.style.display = "block";
+    contador.textContent = "";
+    return;
+  }
+
+  contador.textContent = `${snap.size} foto(s)`;
+  snap.forEach(d => {
+    const foto  = d.data();
+    const fecha = foto.uploadedAt?.toDate ? foto.uploadedAt.toDate().toLocaleDateString("es-AR") : "-";
+    const div   = document.createElement("div");
+    div.className    = "gallery-item" + (foto.seleccionada ? " selected" : "");
+    div.dataset.info = tooltipHtml({ cliente: clienteNombre, grupo: grupoNombre, fecha, seleccionada: foto.seleccionada });
+    div.innerHTML    = `<img src="${foto.url}" alt="foto" /><div class="check">✓</div>`;
+    grid.appendChild(div);
+  });
 }
 
 async function handleFiles(files) {
@@ -396,6 +462,8 @@ async function handleFiles(files) {
 
   statusEl.innerHTML += `<p style="color:#6fcf97;margin-top:8px;">✅ ${done} foto(s) subidas correctamente.</p>`;
   cargarUsuarios();
+  // Refrescar vista de fotos del cliente
+  mostrarFotasDelCliente();
 }
 
 // ══════════════════════════════════════════════════════
@@ -492,11 +560,26 @@ async function cargarGaleriaAdmin(clienteId = null, clienteIds = null) {
   }
 
   contador.textContent = `${fotos.length} foto(s)`;
+
+  // Construir mapa clienteId → {nombre, grupoNombre}
+  const clientesSnap = await getDocs(query(collection(db, "usuarios"), where("role","==","cliente")));
+  const gruposSnap   = await getDocs(collection(db, "grupos"));
+  const gruposMap    = {};
+  gruposSnap.forEach(d => { gruposMap[d.id] = d.data().nombre; });
+  const clientesMap  = {};
+  clientesSnap.forEach(d => {
+    const u = d.data();
+    clientesMap[d.id] = { nombre: u.nombre, grupo: u.grupoId ? (gruposMap[u.grupoId] || "-") : "-" };
+  });
+
   fotos.forEach(d => {
-    const foto = d.data();
-    const div  = document.createElement("div");
-    div.className = "gallery-item" + (foto.seleccionada ? " selected" : "");
-    div.innerHTML = `<img src="${foto.url}" alt="foto" /><div class="check">✓</div>`;
+    const foto   = d.data();
+    const info   = clientesMap[foto.clienteId] || { nombre: "-", grupo: "-" };
+    const fecha  = foto.uploadedAt?.toDate ? foto.uploadedAt.toDate().toLocaleDateString("es-AR") : "-";
+    const div    = document.createElement("div");
+    div.className    = "gallery-item" + (foto.seleccionada ? " selected" : "");
+    div.dataset.info = tooltipHtml({ cliente: info.nombre, grupo: info.grupo, fecha, seleccionada: foto.seleccionada });
+    div.innerHTML    = `<img src="${foto.url}" alt="foto" /><div class="check">✓</div>`;
     container.appendChild(div);
   });
 }
@@ -531,11 +614,23 @@ async function verSelecciones() {
   container.innerHTML = "";
   if (snap.empty) { msg.style.display = "block"; return; }
 
+  // Obtener nombre y grupo del cliente
+  const uSnap       = await getDoc(doc(db, "usuarios", clienteId));
+  const clienteNom  = uSnap.exists() ? uSnap.data().nombre : "-";
+  const grupoId2    = uSnap.exists() ? uSnap.data().grupoId : null;
+  let grupoNom2     = "-";
+  if (grupoId2) {
+    const gSnap = await getDoc(doc(db, "grupos", grupoId2));
+    if (gSnap.exists()) grupoNom2 = gSnap.data().nombre;
+  }
+
   snap.forEach(d => {
-    const foto = d.data();
-    const div  = document.createElement("div");
-    div.className = "gallery-item selected";
-    div.innerHTML = `<img src="${foto.url}" alt="foto seleccionada" /><div class="check">✓</div>`;
+    const foto  = d.data();
+    const fecha = foto.uploadedAt?.toDate ? foto.uploadedAt.toDate().toLocaleDateString("es-AR") : "-";
+    const div   = document.createElement("div");
+    div.className    = "gallery-item selected";
+    div.dataset.info = tooltipHtml({ cliente: clienteNom, grupo: grupoNom2, fecha, seleccionada: true });
+    div.innerHTML    = `<img src="${foto.url}" alt="foto seleccionada" /><div class="check">✓</div>`;
     container.appendChild(div);
   });
 }
@@ -760,15 +855,22 @@ async function cargarFotosGrupalesAdmin() {
   container.innerHTML = "<p style='color:#555'>Cargando...</p>";
   if (!grupoId) { container.innerHTML = ""; return; }
 
+  // Obtener nombre del grupo para el tooltip
+  let grupoNombre = grupoId;
+  const gSnap = await getDoc(doc(db, "grupos", grupoId));
+  if (gSnap.exists()) grupoNombre = gSnap.data().nombre;
+
   const snap = await getDocs(query(collection(db, "fotosGrupales"), where("grupoId", "==", grupoId)));
   if (snap.empty) { container.innerHTML = "<p style='color:#555'>No hay fotos grupales aún.</p>"; return; }
 
   container.innerHTML = "";
   snap.forEach(d => {
-    const foto = d.data();
-    const div  = document.createElement("div");
-    div.className = "gallery-item";
+    const foto  = d.data();
+    const fecha = foto.uploadedAt?.toDate ? foto.uploadedAt.toDate().toLocaleDateString("es-AR") : "-";
+    const div   = document.createElement("div");
+    div.className    = "gallery-item";
     div.style.position = "relative";
+    div.dataset.info = tooltipHtml({ grupo: grupoNombre, tipo: "Foto grupal", fecha });
     div.innerHTML = `
       <img src="${foto.url}" alt="foto grupal" />
       <button onclick="eliminarFotoGrupal('${d.id}')" style="position:absolute;top:6px;right:6px;background:rgba(192,57,43,0.85);border:none;color:#fff;border-radius:4px;padding:4px 8px;font-size:0.75rem;cursor:pointer;">✕</button>

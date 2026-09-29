@@ -287,7 +287,7 @@ async function setupCompartirContenidos() {
 }
 
 async function subirArchivosCliente(files) {
-  const MAX_MB     = 100;
+  const MAX_MB     = 10;
   const validos    = [];
   const rechazados = [];
 

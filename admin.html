@@ -64,6 +64,27 @@
 
     #uploadStatus { margin-top:12px; color:#888; font-size:0.85rem; }
 
+    /* Tooltip de foto */
+    .foto-tooltip {
+      position: fixed; z-index: 9999; pointer-events: none;
+      background: rgba(10,10,10,0.95); border: 1px solid #333;
+      border-radius: 6px; padding: 10px 14px;
+      font-size: 0.78rem; color: #ccc; line-height: 1.7;
+      max-width: 220px; display: none;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+    .foto-tooltip .tt-label { color: #666; font-size: 0.7rem; letter-spacing: 1px; text-transform: uppercase; }
+    .foto-tooltip .tt-value { color: #fff; }
+    .foto-tooltip .tt-sel { color: #c9a84c; font-weight: 700; }
+
+    /* Overlay info en gallery-item */
+    .gallery-item .info-overlay {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0); transition: background 0.2s;
+      cursor: default;
+    }
+    .gallery-item:hover .info-overlay { background: rgba(0,0,0,0.15); }
+
     .tab-panel { display:none; }
     .tab-panel.active { display:block; }
 
@@ -241,6 +262,15 @@
             <input type="file" id="fileInput" multiple accept="image/*" />
             <div id="uploadStatus"></div>
           </div>
+          <!-- Fotos ya subidas al cliente seleccionado -->
+          <div class="card" id="cardFotosSubidas" style="display:none;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+              <h3 style="margin-bottom:0;">Fotos subidas a <span id="nombreClienteSubidas" style="color:#c9a84c;"></span></h3>
+              <span id="contadorFotasSubidas" style="color:#666;font-size:0.82rem;"></span>
+            </div>
+            <div id="gridFotosSubidas" class="gallery-grid"></div>
+            <p id="emptyFotosSubidas" style="color:#555;font-size:0.85rem;display:none;">Este cliente aún no tiene fotos.</p>
+          </div>
         </div>
 
         <!-- SUB-TAB: GRUPALES -->
@@ -392,11 +422,36 @@
     </div>
   </div>
 
+  <!-- TOOLTIP DE FOTO -->
+  <div class="foto-tooltip" id="fotoTooltip"></div>
+
   <script>
     // Bloquear clic derecho en TODO el sitio
     document.addEventListener("contextmenu", e => e.preventDefault());
-    // Bloquear arrastrar imágenes
     document.addEventListener("dragstart", e => { if (e.target.tagName === "IMG") e.preventDefault(); });
+
+    // Tooltip global para gallery-item
+    const tooltip = document.getElementById("fotoTooltip");
+    document.addEventListener("mouseover", e => {
+      const item = e.target.closest(".gallery-item[data-info]");
+      if (!item) return;
+      tooltip.innerHTML = item.dataset.info;
+      tooltip.style.display = "block";
+    });
+    document.addEventListener("mousemove", e => {
+      if (tooltip.style.display === "none") return;
+      const x = e.clientX + 14;
+      const y = e.clientY + 14;
+      // Evitar que se salga de la pantalla
+      const tw = tooltip.offsetWidth;
+      const th = tooltip.offsetHeight;
+      tooltip.style.left = (x + tw > window.innerWidth  ? x - tw - 28 : x) + "px";
+      tooltip.style.top  = (y + th > window.innerHeight ? y - th - 28 : y) + "px";
+    });
+    document.addEventListener("mouseout", e => {
+      if (!e.target.closest(".gallery-item[data-info]")) return;
+      tooltip.style.display = "none";
+    });
   </script>
 
   <script type="module" src="js/admin.js"></script>
