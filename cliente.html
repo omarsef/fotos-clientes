@@ -17,95 +17,206 @@
     .client-topbar .user-info { display:flex; align-items:center; gap:16px; }
     .client-topbar .user-info span { color:#888; font-size:0.85rem; }
 
-    .client-body { padding-top: 65px; max-width: 1200px; margin: 0 auto; padding-left: 20px; padding-right: 20px; }
-
-    .welcome-bar {
-      padding: 32px 0 20px;
-      border-bottom: 1px solid #222;
-      margin-bottom: 28px;
+    .client-body {
+      padding-top: 65px;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding-left: 20px;
+      padding-right: 20px;
     }
-    .welcome-bar h1 { font-size:1.4rem; font-weight:300; letter-spacing:3px; text-transform:uppercase; color:#fff; }
-    .welcome-bar p { color:#888; margin-top:8px; font-size:0.9rem; }
 
+    /* Welcome */
+    .welcome-bar {
+      padding: 28px 0 0;
+    }
+    .welcome-bar h1 {
+      font-size:1.4rem; font-weight:300; letter-spacing:3px;
+      text-transform:uppercase; color:#fff;
+    }
+
+    /* Tabs principales */
+    .main-tabs {
+      display: flex;
+      gap: 0;
+      margin: 24px 0 0;
+      border-bottom: 1px solid #222;
+    }
+    .main-tab-btn {
+      padding: 14px 28px;
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      color: #666;
+      font-size: 0.88rem;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: -1px;
+    }
+    .main-tab-btn:hover { color: #aaa; }
+    .main-tab-btn.active {
+      color: #c9a84c;
+      border-bottom-color: #c9a84c;
+    }
+    .main-tab-panel { display: none; padding-top: 28px; }
+    .main-tab-panel.active { display: block; }
+
+    /* ── TAB 1: MIS FOTOS ── */
     .selection-bar {
       display: flex; align-items: center; justify-content: space-between;
       background: #161616; border: 1px solid #2a2a2a; border-radius:6px;
-      padding: 16px 22px; margin-bottom: 24px;
+      padding: 14px 22px; margin-bottom: 24px;
     }
     .selection-bar p { color:#aaa; font-size:0.9rem; }
     .selection-bar p span { color:#c9a84c; font-weight:700; font-size:1.1rem; }
 
     .btn-confirm {
-      padding: 11px 28px; background: #c9a84c; border: none; border-radius: 4px;
-      color: #000; font-weight: 700; font-size: 0.85rem; letter-spacing: 2px;
+      padding: 10px 26px; background: #c9a84c; border: none; border-radius: 4px;
+      color: #000; font-weight: 700; font-size: 0.82rem; letter-spacing: 2px;
       text-transform: uppercase; cursor: pointer; transition: background 0.2s;
     }
     .btn-confirm:hover { background: #e0be6a; }
     .btn-confirm:disabled { background: #444; color: #777; cursor: not-allowed; }
 
-    .empty-state {
-      text-align: center; padding: 80px 20px; color: #555;
-    }
-    .empty-state p { font-size: 1rem; letter-spacing: 1px; }
+    .empty-state { text-align:center; padding:60px 20px; color:#555; }
+    .empty-state p { font-size:0.95rem; letter-spacing:1px; }
 
     /* Zoom hint */
     .zoom-hint {
-      position: absolute; top: 8px; left: 8px;
-      background: rgba(0,0,0,0.6); border-radius: 50%;
-      width: 28px; height: 28px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 13px; opacity: 0; transition: opacity 0.2s; cursor: pointer;
+      position:absolute; top:8px; left:8px;
+      background:rgba(0,0,0,0.6); border-radius:50%;
+      width:28px; height:28px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:13px; opacity:0; transition:opacity 0.2s; cursor:pointer;
     }
-    .gallery-item:hover .zoom-hint { opacity: 1; }
+    .gallery-item:hover .zoom-hint { opacity:1; }
+
+    /* ── TAB 2: COMPARTIR ── */
+    .compartir-intro {
+      background: #161616; border: 1px solid #222; border-radius:8px;
+      padding: 22px 26px; margin-bottom: 24px;
+    }
+    .compartir-intro p { color:#888; font-size:0.9rem; line-height:1.7; }
+
+    .upload-zone {
+      border: 2px dashed #333; border-radius:6px; padding:40px;
+      text-align:center; cursor:pointer; transition:border-color 0.2s;
+      margin-bottom: 16px;
+    }
+    .upload-zone:hover { border-color:#c9a84c; }
+    .upload-zone p { color:#666; font-size:0.9rem; }
+    .upload-zone p span { color:#c9a84c; }
+    .upload-zone .size-note { margin-top:8px; font-size:0.78rem; color:#555; }
+
+    .progress-bar-wrap { background:#222; border-radius:20px; height:6px; margin:8px 0; }
+    .progress-bar { background:#c9a84c; height:6px; border-radius:20px; width:0%; transition:width 0.3s; }
+
+    .drive-box {
+      background:#1a2a1a; border:1px solid #2a4a2a; border-radius:6px;
+      padding:16px 20px; margin-bottom:20px;
+    }
+    .drive-box p { color:#aaa; font-size:0.85rem; }
+    .drive-box a {
+      display:inline-block; margin-top:8px; padding:8px 18px;
+      background:#2a4a2a; border:1px solid #4a7a4a; border-radius:4px;
+      color:#6fcf97; font-size:0.82rem; text-decoration:none; letter-spacing:1px;
+      transition:background 0.2s;
+    }
+    .drive-box a:hover { background:#3a6a3a; }
+
+    .mis-archivos-section { margin-top:10px; }
+    .mis-archivos-section h3 {
+      font-size:0.78rem; letter-spacing:2px; text-transform:uppercase;
+      color:#666; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid #1e1e1e;
+    }
+    .archivos-grid {
+      display:grid; grid-template-columns:repeat(auto-fill, minmax(130px,1fr)); gap:10px;
+    }
+    .archivo-item {
+      position:relative; background:#1a1a1a; border:1px solid #222;
+      border-radius:6px; overflow:hidden; aspect-ratio:4/3;
+    }
+    .archivo-item img, .archivo-item video {
+      width:100%; height:100%; object-fit:cover;
+    }
+    .archivo-label {
+      position:absolute; bottom:0; left:0; right:0;
+      background:rgba(0,0,0,0.75); font-size:0.68rem; color:#ccc;
+      padding:4px 6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    }
+    .empty-archivos { color:#555; font-size:0.85rem; padding:20px 0; }
+
+    /* Banner audiovisual */
+    .banner-audiovisual {
+      background:#1a1a2a; border:1px solid #2a2a4a; border-radius:8px;
+      padding:18px 22px; display:flex; align-items:center;
+      justify-content:space-between; flex-wrap:wrap; gap:12px;
+      margin-bottom:20px;
+    }
+    .banner-audiovisual p.label {
+      color:#c9a84c; font-size:0.78rem; letter-spacing:2px;
+      text-transform:uppercase; margin-bottom:4px;
+    }
+    .banner-audiovisual p.desc { color:#888; font-size:0.85rem; }
+    .banner-audiovisual a {
+      padding:10px 20px; background:#c9a84c; border-radius:4px;
+      color:#000; font-weight:700; font-size:0.78rem; letter-spacing:2px;
+      text-transform:uppercase; text-decoration:none; white-space:nowrap;
+      transition:background 0.2s;
+    }
+    .banner-audiovisual a:hover { background:#e0be6a; }
 
     /* Lightbox */
     .lightbox {
-      display: none; position: fixed; inset: 0; z-index: 999;
-      background: rgba(0,0,0,0.96);
-      align-items: center; justify-content: center;
-      flex-direction: column;
+      display:none; position:fixed; inset:0; z-index:999;
+      background:rgba(0,0,0,0.96);
+      align-items:center; justify-content:center; flex-direction:column;
     }
-    .lightbox.open { display: flex; }
+    .lightbox.open { display:flex; }
     .lightbox-img-wrap {
-      position: relative; display: flex; align-items: center; justify-content: center;
-      max-width: 92vw; max-height: 80vh;
+      position:relative; display:flex; align-items:center; justify-content:center;
+      max-width:92vw; max-height:80vh;
     }
     .lightbox img {
-      max-width: 90vw; max-height: 78vh;
-      object-fit: contain; border-radius: 4px;
-      user-select: none; -webkit-user-drag: none;
+      max-width:90vw; max-height:78vh; object-fit:contain; border-radius:4px;
+      user-select:none; -webkit-user-drag:none;
     }
     .lightbox-close {
-      position: absolute; top: 18px; right: 24px;
-      font-size: 1.8rem; color: #fff; cursor: pointer; background: none; border: none;
-      line-height: 1; z-index: 10;
+      position:absolute; top:18px; right:24px;
+      font-size:1.8rem; color:#fff; cursor:pointer; background:none; border:none;
+      line-height:1; z-index:10;
     }
     .lightbox-nav {
-      position: absolute; top: 50%; transform: translateY(-50%);
-      background: rgba(255,255,255,0.1); border: none; color: #fff;
-      font-size: 1.6rem; padding: 10px 16px; cursor: pointer; border-radius: 4px;
-      transition: background 0.2s;
+      position:absolute; top:50%; transform:translateY(-50%);
+      background:rgba(255,255,255,0.1); border:none; color:#fff;
+      font-size:1.6rem; padding:10px 16px; cursor:pointer; border-radius:4px;
+      transition:background 0.2s;
     }
-    .lightbox-nav:hover { background: rgba(255,255,255,0.2); }
-    .lightbox-nav.prev { left: -56px; }
-    .lightbox-nav.next { right: -56px; }
-    .lightbox-actions {
-      margin-top: 18px; display: flex; gap: 16px; align-items: center;
-    }
-    .lightbox-counter {
-      color: #888; font-size: 0.85rem; letter-spacing: 1px;
-    }
+    .lightbox-nav:hover { background:rgba(255,255,255,0.2); }
+    .lightbox-nav.prev { left:-56px; }
+    .lightbox-nav.next { right:-56px; }
+    .lightbox-actions { margin-top:18px; display:flex; gap:16px; align-items:center; }
+    .lightbox-counter { color:#888; font-size:0.85rem; letter-spacing:1px; }
 
     .toast {
-      position: fixed; bottom: 30px; right: 30px; z-index: 9999;
-      background: #c9a84c; color: #000; padding: 14px 24px;
-      border-radius: 6px; font-weight: 700; font-size: 0.9rem;
-      opacity: 0; transition: opacity 0.3s; pointer-events: none;
+      position:fixed; bottom:30px; right:30px; z-index:9999;
+      background:#c9a84c; color:#000; padding:14px 24px;
+      border-radius:6px; font-weight:700; font-size:0.9rem;
+      opacity:0; transition:opacity 0.3s; pointer-events:none;
     }
-    .toast.show { opacity: 1; }
+    .toast.show { opacity:1; }
+
+    @media(max-width:600px) {
+      .main-tab-btn { padding:12px 16px; font-size:0.78rem; letter-spacing:1px; }
+    }
   </style>
 </head>
 <body>
+  <script>
+    document.addEventListener("contextmenu", e => e.preventDefault());
+    document.addEventListener("dragstart", e => { if(e.target.tagName==="IMG") e.preventDefault(); });
+  </script>
 
   <!-- TOPBAR -->
   <header class="client-topbar">
@@ -118,71 +229,93 @@
 
   <div class="client-body">
 
+    <!-- BIENVENIDA -->
     <div class="welcome-bar">
-      <h1>Hola, <span id="clientName">cliente</span></h1>
-      <p>Seleccioná las fotos para imprimir o accedé a tu proyecto audiovisual.</p>
+      <h1>Hola, <span id="clientName" style="color:#c9a84c;"></span></h1>
     </div>
 
-    <!-- ACCESO RÁPIDO AUDIOVISUAL (oculto hasta que el admin lo active) -->
-    <div id="bannerAudiovisual" style="display:none; margin-bottom:28px;">
-      <div style="background:#1a1a2a;border:1px solid #2a2a4a;border-radius:8px;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <!-- TABS PRINCIPALES -->
+    <div class="main-tabs">
+      <button class="main-tab-btn active" data-tab="mis-fotos">📷 Mis Fotos</button>
+      <button class="main-tab-btn" data-tab="compartir">📁 Compartí tus contenidos</button>
+    </div>
+
+    <!-- ══════════════════════════════════════════════ -->
+    <!-- TAB 1: MIS FOTOS                              -->
+    <!-- ══════════════════════════════════════════════ -->
+    <div class="main-tab-panel active" id="tab-mis-fotos">
+
+      <!-- Banner audiovisual (solo si está activo) -->
+      <div id="bannerAudiovisual" class="banner-audiovisual" style="display:none;">
         <div>
-          <p style="color:#c9a84c;font-size:0.82rem;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">🎬 Servicio audiovisual activo</p>
-          <p style="color:#888;font-size:0.85rem;">Tenés un proyecto audiovisual en curso. Podés subir material y ver el estado.</p>
+          <p class="label">🎬 Proyecto audiovisual activo</p>
+          <p class="desc">Tenés un proyecto en curso. Podés ver el estado y dejar tus indicaciones.</p>
         </div>
-        <a href="proyecto.html" style="padding:10px 22px;background:#c9a84c;border-radius:4px;color:#000;font-weight:700;font-size:0.82rem;letter-spacing:2px;text-transform:uppercase;text-decoration:none;white-space:nowrap;">Ver mi proyecto →</a>
+        <a href="proyecto.html">Ver mi proyecto →</a>
       </div>
-    </div>
 
-    <!-- FOTOS GRUPALES (ocultas hasta que haya) -->
-    <div id="seccionGrupal" style="display:none;">
-      <div style="padding:20px 0 10px; border-bottom:1px solid #222; margin-bottom:20px;">
-        <h2 style="font-size:1rem;font-weight:300;letter-spacing:3px;text-transform:uppercase;color:#c9a84c;">Fotos del grupo</h2>
-        <p style="color:#666;font-size:0.85rem;margin-top:6px;">Fotos compartidas con todos los integrantes de tu grupo. Doble clic para verlas en grande.</p>
+      <!-- Fotos grupales -->
+      <div id="seccionGrupal" style="display:none;">
+        <div style="margin-bottom:16px;">
+          <p style="font-size:0.75rem;letter-spacing:2px;text-transform:uppercase;color:#c9a84c;margin-bottom:4px;">Fotos del grupo</p>
+          <p style="color:#666;font-size:0.82rem;">Fotos compartidas con todos los integrantes de tu grupo. Doble clic para verlas en grande.</p>
+        </div>
+        <div id="galeriaGrupal" class="gallery-grid" style="margin-bottom:36px;"></div>
+        <div style="border-bottom:1px solid #222; margin-bottom:28px;"></div>
       </div>
-      <div id="galeriaGrupal" class="gallery-grid" style="margin-bottom:40px;"></div>
+
+      <!-- Fotos personales -->
+      <div style="margin-bottom:18px;">
+        <p style="font-size:0.75rem;letter-spacing:2px;text-transform:uppercase;color:#888;margin-bottom:4px;">Tus fotos personales</p>
+        <p style="color:#666;font-size:0.82rem;">Hacé clic en las fotos que más te gustan para seleccionarlas. Doble clic o 🔍 para verlas en grande.</p>
+      </div>
+
+      <div class="selection-bar">
+        <p>Fotos seleccionadas: <span id="countSelected">0</span></p>
+        <button class="btn-confirm" id="btnConfirm" disabled>Confirmar selección</button>
+      </div>
+
+      <div id="galeriaCliente" class="gallery-grid"></div>
+      <div class="empty-state" id="emptyState" style="display:none;">
+        <p>Todavía no hay fotos cargadas en tu galería.</p>
+        <p style="margin-top:10px;font-size:0.82rem;color:#444;">Volvé en unos días.</p>
+      </div>
+
     </div>
 
-    <!-- FOTOS PERSONALES -->
-    <div style="padding:10px 0 16px; border-bottom:1px solid #222; margin-bottom:20px;">
-      <h2 style="font-size:1rem;font-weight:300;letter-spacing:3px;text-transform:uppercase;color:#fff;">Tus fotos personales</h2>
-      <p style="color:#666;font-size:0.85rem;margin-top:6px;">Seleccioná las que más te gustan para imprimir.</p>
-    </div>
+    <!-- ══════════════════════════════════════════════ -->
+    <!-- TAB 2: COMPARTÍ TUS CONTENIDOS                -->
+    <!-- ══════════════════════════════════════════════ -->
+    <div class="main-tab-panel" id="tab-compartir">
 
-    <div class="selection-bar">
-      <p>Fotos seleccionadas: <span id="countSelected">0</span></p>
-      <button class="btn-confirm" id="btnConfirm" disabled>Confirmar selección</button>
-    </div>
+      <div class="compartir-intro">
+        <p>¿Tenés fotos o videos que quieras que editemos? Subílos acá. Para archivos grandes (videos de más de 100 MB) usá el link al Google Drive que aparece abajo.</p>
+      </div>
 
-    <div id="galeriaCliente" class="gallery-grid"></div>
-    <div class="empty-state" id="emptyState" style="display:none;">
-      <p>Todavía no hay fotos cargadas en tu galería.</p>
-      <p style="margin-top:10px; font-size:0.82rem; color:#444;">Volvé en unos días.</p>
-    </div>
-
-    <!-- COMPARTÍ TUS CONTENIDOS -->
-    <div style="margin-top:48px; padding-top:32px; border-top:1px solid #222;">
-      <h2 style="font-size:1rem;font-weight:300;letter-spacing:3px;text-transform:uppercase;color:#fff;margin-bottom:8px;">📁 Compartí tus contenidos</h2>
-      <p style="color:#666;font-size:0.85rem;margin-bottom:20px;">¿Tenés fotos o videos que quieras que editemos? Subílos acá directamente o usá nuestro Drive para archivos pesados.</p>
-
-      <div id="uploadClienteZone" style="border:2px dashed #333;border-radius:6px;padding:32px;text-align:center;cursor:pointer;transition:border-color 0.2s;">
-        <p style="color:#666;font-size:0.9rem;">📷 Arrastrá tus fotos o videos acá o <span style="color:#c9a84c;">hacé clic para seleccionar</span></p>
-        <p style="margin-top:8px;font-size:0.78rem;color:#555;">Formatos: JPG, PNG, MP4, MOV · Máximo 100 MB por archivo</p>
+      <!-- Zona de subida -->
+      <div id="uploadClienteZone" class="upload-zone">
+        <p>📷 Arrastrá tus fotos o videos acá o <span>hacé clic para seleccionar</span></p>
+        <p class="size-note">Formatos: JPG, PNG, MP4, MOV · Máximo 100 MB por archivo</p>
       </div>
       <input type="file" id="fileInputCliente" multiple accept="image/*,video/*" style="display:none;"/>
-      <div id="uploadStatusCliente" style="margin-top:12px;font-size:0.85rem;color:#888;"></div>
-      <span id="rejectedCliente" style="display:none;color:#e05252;font-size:0.85rem;margin-top:8px;display:block;"></span>
+      <div id="uploadStatusCliente"></div>
+      <p id="rejectedCliente" style="display:none;color:#e05252;font-size:0.85rem;margin-bottom:12px;"></p>
 
       <!-- Drive para archivos pesados -->
-      <div id="driveSectionCliente" style="display:none;margin-top:16px;">
-        <div style="background:#1a2a1a;border:1px solid #2a4a2a;border-radius:6px;padding:16px 20px;">
-          <p style="color:#aaa;font-size:0.85rem;">📦 Para archivos mayores a 100 MB subílos a nuestro Drive:</p>
-          <a href="#" id="driveLinkCliente" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;padding:8px 18px;background:#2a4a2a;border:1px solid #4a7a4a;border-radius:4px;color:#6fcf97;font-size:0.82rem;text-decoration:none;">📂 Abrir Google Drive compartido</a>
+      <div id="driveSectionCliente" style="display:none;">
+        <div class="drive-box">
+          <p>📦 Para videos mayores a 100 MB, subílos a nuestro Google Drive:</p>
+          <a href="#" id="driveLinkCliente" target="_blank" rel="noopener">📂 Abrir Google Drive compartido</a>
         </div>
       </div>
 
-      <!-- Archivos ya subidos -->
-      <div id="archivosClienteGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-top:20px;"></div>
+      <!-- Mis archivos subidos -->
+      <div class="mis-archivos-section">
+        <h3>Contenidos subidos</h3>
+        <p class="empty-archivos" id="emptyArchivos">Todavía no subiste ningún archivo.</p>
+        <div class="archivos-grid" id="archivosClienteGrid"></div>
+      </div>
+
     </div>
 
   </div>
@@ -204,6 +337,17 @@
   <!-- TOAST -->
   <div class="toast" id="toast"></div>
 
+  <script>
+    // Navegación entre tabs
+    document.querySelectorAll(".main-tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".main-tab-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".main-tab-panel").forEach(p => p.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+      });
+    });
+  </script>
   <script type="module" src="js/cliente.js"></script>
 </body>
 </html>
