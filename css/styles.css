@@ -106,6 +106,30 @@ a {
   text-transform: uppercase;
 }
 
+.btn-hero-login {
+  display: inline-block;
+  margin-top: 36px;
+  padding: 14px 40px;
+  border: 1px solid #c9a84c;
+  border-radius: 4px;
+  color: #c9a84c;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+
+.btn-hero-login:hover {
+  background: #c9a84c;
+  color: #000;
+}
+
+/* En desktop el botón hero se oculta (ya está en la navbar) */
+@media (min-width: 769px) {
+  .btn-hero-login { display: none; }
+}
+
 /* ===== SECTIONS ===== */
 .section-title {
   text-align: center;
@@ -431,7 +455,7 @@ a {
 
 @media (max-width: 768px) {
   .navbar { padding: 16px 20px; }
-  .navbar nav { display: none; }
+  .navbar nav a:not(.btn-login) { display: none; }
   .sidebar { display: none; }
   .main-content { margin-left: 0; padding: 20px; }
 }
