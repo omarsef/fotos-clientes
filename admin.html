@@ -191,7 +191,12 @@
         </div>
 
         <div class="card">
-          <h3>Clientes registrados</h3>
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+            <h3 style="margin-bottom:0;">Clientes registrados</h3>
+            <select class="input-field" id="filtroGrupoClientes" style="margin-bottom:0;width:auto;min-width:220px;">
+              <option value="">-- Todos los grupos --</option>
+            </select>
+          </div>
           <table>
             <thead>
               <tr>

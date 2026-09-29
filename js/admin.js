@@ -34,6 +34,11 @@ function init() {
       document.getElementById("tab-" + a.dataset.tab).classList.add("active");
       if (a.dataset.tab === "analytics") cargarAnalytics();
       if (a.dataset.tab === "proyectos") initProyectos();
+      if (a.dataset.tab === "galerias") {
+        popularSelectClientesGaleria();
+        popularSelectGruposGaleria();
+        cargarGaleriaAdmin();
+      }
     });
   });
 
@@ -58,6 +63,11 @@ function init() {
   setupSelecciones();
   setupAnalytics();
   setupFotosGrupales();
+
+  // Filtro por grupo en tabla de clientes
+  document.getElementById("filtroGrupoClientes").addEventListener("change", (e) => {
+    cargarUsuarios(e.target.value);
+  });
 }
 
 // ══════════════════════════════════════════════════════
@@ -241,7 +251,7 @@ function setupCrearUsuario() {
   });
 }
 
-async function cargarUsuarios() {
+async function cargarUsuarios(filtroGrupoId = "") {
   const tbody = document.getElementById("tablaUsuarios");
   tbody.innerHTML = "<tr><td colspan='6' style='color:#555'>Cargando...</td></tr>";
 
@@ -253,15 +263,26 @@ async function cargarUsuarios() {
   const gruposMap = {};
   gruposSnap.forEach(d => { gruposMap[d.id] = d.data().nombre; });
 
-  if (usuariosSnap.empty) {
-    tbody.innerHTML = "<tr><td colspan='6' style='color:#555'>No hay clientes aún.</td></tr>";
-    return;
+  // Popular filtro de grupos
+  const filtroSel = document.getElementById("filtroGrupoClientes");
+  if (filtroSel && filtroSel.options.length <= 1) {
+    gruposSnap.forEach(d => {
+      if (d.data().eliminado) return;
+      const opt = document.createElement("option");
+      opt.value = d.id;
+      opt.textContent = d.data().nombre;
+      filtroSel.appendChild(opt);
+    });
   }
 
   tbody.innerHTML = "";
+  let count = 0;
   usuariosSnap.forEach(d => {
     const u = d.data();
     if (u.eliminado) return;
+    // Aplicar filtro de grupo si está seleccionado
+    if (filtroGrupoId && u.grupoId !== filtroGrupoId) return;
+    count++;
     const grupoNombre = u.grupoId ? (gruposMap[u.grupoId] || "-") : "-";
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -277,6 +298,10 @@ async function cargarUsuarios() {
     `;
     tbody.appendChild(tr);
   });
+
+  if (count === 0) {
+    tbody.innerHTML = "<tr><td colspan='6' style='color:#555'>No hay clientes en este grupo.</td></tr>";
+  }
 
   popularSelectGrupos();
   popularSelectClientes();
@@ -377,17 +402,6 @@ async function handleFiles(files) {
 // GALERÍA ADMIN
 // ══════════════════════════════════════════════════════
 function setupGaleriaAdmin() {
-  // Poblar selects y cargar todas las fotos al entrar a la tab
-  document.querySelectorAll(".sidebar a").forEach(a => {
-    if (a.dataset.tab === "galerias") {
-      a.addEventListener("click", () => {
-        popularSelectClientesGaleria();
-        popularSelectGruposGaleria();
-        cargarGaleriaAdmin();
-      }, { once: false });
-    }
-  });
-
   // Filtrar al cambiar cliente
   document.getElementById("clienteParaGaleria").addEventListener("change", () => {
     // Si se selecciona cliente, limpiar grupo y viceversa

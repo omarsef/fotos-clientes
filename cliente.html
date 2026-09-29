@@ -120,7 +120,18 @@
 
     <div class="welcome-bar">
       <h1>Hola, <span id="clientName">cliente</span></h1>
-      <p>Hacé clic en las fotos que más te gustan para seleccionarlas. Doble clic o 🔍 para verlas en grande.</p>
+      <p>Seleccioná las fotos para imprimir o accedé a tu proyecto audiovisual.</p>
+    </div>
+
+    <!-- ACCESO RÁPIDO AUDIOVISUAL (oculto hasta que el admin lo active) -->
+    <div id="bannerAudiovisual" style="display:none; margin-bottom:28px;">
+      <div style="background:#1a1a2a;border:1px solid #2a2a4a;border-radius:8px;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <p style="color:#c9a84c;font-size:0.82rem;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">🎬 Servicio audiovisual activo</p>
+          <p style="color:#888;font-size:0.85rem;">Tenés un proyecto audiovisual en curso. Podés subir material y ver el estado.</p>
+        </div>
+        <a href="proyecto.html" style="padding:10px 22px;background:#c9a84c;border-radius:4px;color:#000;font-weight:700;font-size:0.82rem;letter-spacing:2px;text-transform:uppercase;text-decoration:none;white-space:nowrap;">Ver mi proyecto →</a>
+      </div>
     </div>
 
     <!-- FOTOS GRUPALES (ocultas hasta que haya) -->
@@ -147,6 +158,31 @@
     <div class="empty-state" id="emptyState" style="display:none;">
       <p>Todavía no hay fotos cargadas en tu galería.</p>
       <p style="margin-top:10px; font-size:0.82rem; color:#444;">Volvé en unos días.</p>
+    </div>
+
+    <!-- COMPARTÍ TUS CONTENIDOS -->
+    <div style="margin-top:48px; padding-top:32px; border-top:1px solid #222;">
+      <h2 style="font-size:1rem;font-weight:300;letter-spacing:3px;text-transform:uppercase;color:#fff;margin-bottom:8px;">📁 Compartí tus contenidos</h2>
+      <p style="color:#666;font-size:0.85rem;margin-bottom:20px;">¿Tenés fotos o videos que quieras que editemos? Subílos acá directamente o usá nuestro Drive para archivos pesados.</p>
+
+      <div id="uploadClienteZone" style="border:2px dashed #333;border-radius:6px;padding:32px;text-align:center;cursor:pointer;transition:border-color 0.2s;">
+        <p style="color:#666;font-size:0.9rem;">📷 Arrastrá tus fotos o videos acá o <span style="color:#c9a84c;">hacé clic para seleccionar</span></p>
+        <p style="margin-top:8px;font-size:0.78rem;color:#555;">Formatos: JPG, PNG, MP4, MOV · Máximo 100 MB por archivo</p>
+      </div>
+      <input type="file" id="fileInputCliente" multiple accept="image/*,video/*" style="display:none;"/>
+      <div id="uploadStatusCliente" style="margin-top:12px;font-size:0.85rem;color:#888;"></div>
+      <span id="rejectedCliente" style="display:none;color:#e05252;font-size:0.85rem;margin-top:8px;display:block;"></span>
+
+      <!-- Drive para archivos pesados -->
+      <div id="driveSectionCliente" style="display:none;margin-top:16px;">
+        <div style="background:#1a2a1a;border:1px solid #2a4a2a;border-radius:6px;padding:16px 20px;">
+          <p style="color:#aaa;font-size:0.85rem;">📦 Para archivos mayores a 100 MB subílos a nuestro Drive:</p>
+          <a href="#" id="driveLinkCliente" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;padding:8px 18px;background:#2a4a2a;border:1px solid #4a7a4a;border-radius:4px;color:#6fcf97;font-size:0.82rem;text-decoration:none;">📂 Abrir Google Drive compartido</a>
+        </div>
+      </div>
+
+      <!-- Archivos ya subidos -->
+      <div id="archivosClienteGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-top:20px;"></div>
     </div>
 
   </div>
