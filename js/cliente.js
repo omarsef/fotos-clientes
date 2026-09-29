@@ -170,12 +170,35 @@ function toggleSeleccion(fotoId) {
 function actualizarContador() {
   const count = seleccionadas.size;
   document.getElementById("countSelected").textContent = count;
-  document.getElementById("btnConfirm").disabled = count === 0;
+  const btn = document.getElementById("btnConfirm");
+  btn.disabled = count === 0;
+
+  // Barra flotante: aparece cuando hay al menos 1 seleccionada
+  const bar = document.getElementById("floatingBar");
+  if (bar) bar.classList.toggle("visible", count > 0);
 }
 
-// ── Confirmar selección ──────────────────────────────────────
-document.getElementById("btnConfirm").addEventListener("click", async () => {
-  if (!confirm(`¿Confirmás la selección de ${seleccionadas.size} foto(s)?`)) return;
+// ── Limpiar selección ────────────────────────────────────────
+document.getElementById("btnClearSel").addEventListener("click", () => {
+  seleccionadas.clear();
+  renderGaleria();
+  actualizarContador();
+});
+
+// ── Abrir modal de confirmación ──────────────────────────────
+document.getElementById("btnConfirm").addEventListener("click", () => {
+  document.getElementById("modalCount").textContent = seleccionadas.size;
+  document.getElementById("confirmModalOverlay").classList.add("open");
+});
+
+document.getElementById("modalCancelar").addEventListener("click", () => {
+  document.getElementById("confirmModalOverlay").classList.remove("open");
+});
+
+// ── Confirmar selección (desde el modal) ─────────────────────
+document.getElementById("modalConfirmar").addEventListener("click", async () => {
+  const overlay = document.getElementById("confirmModalOverlay");
+  overlay.classList.remove("open");
 
   const btn = document.getElementById("btnConfirm");
   btn.disabled = true;
@@ -188,11 +211,14 @@ document.getElementById("btnConfirm").addEventListener("click", async () => {
       });
     }
     showToast("✅ Selección confirmada. ¡Gracias!");
-    btn.textContent = "✅ Selección guardada";
+    btn.textContent = "✅ Guardado";
+    // Ocultar barra flotante tras confirmar
+    const bar = document.getElementById("floatingBar");
+    if (bar) setTimeout(() => bar.classList.remove("visible"), 2000);
   } catch (err) {
     console.error(err);
     btn.disabled = false;
-    btn.textContent = "Confirmar selección";
+    btn.textContent = "✓ Confirmar selección";
     showToast("Error al guardar. Intentá de nuevo.");
   }
 });

@@ -7,7 +7,7 @@ import {
 import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
   doc, setDoc, getDoc, getDocs, addDoc, collection,
-  updateDoc, increment, query, where, orderBy
+  updateDoc, deleteDoc, increment, query, where, orderBy
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // ── Auth guard ───────────────────────────────────────────────
@@ -579,10 +579,29 @@ async function cargarGaleriaAdmin(clienteId = null, clienteIds = null) {
     const div    = document.createElement("div");
     div.className    = "gallery-item" + (foto.seleccionada ? " selected" : "");
     div.dataset.info = tooltipHtml({ cliente: info.nombre, grupo: info.grupo, fecha, seleccionada: foto.seleccionada });
-    div.innerHTML    = `<img src="${foto.url}" alt="foto" /><div class="check">✓</div>`;
+    div.innerHTML    = `
+      <img src="${foto.url}" alt="foto" />
+      <div class="check">✓</div>
+      <button class="btn-delete-foto" title="Eliminar foto" onclick="eliminarFoto('${d.id}', this)">🗑️</button>
+    `;
     container.appendChild(div);
   });
 }
+
+window.eliminarFoto = async (fotoId, btn) => {
+  if (!confirm("¿Eliminar esta foto? Esta acción no se puede deshacer.")) return;
+  btn.disabled = true;
+  btn.textContent = "...";
+  await deleteDoc(doc(db, "fotos", fotoId));
+  // Quitar el item del DOM sin recargar toda la galería
+  btn.closest(".gallery-item").remove();
+  // Actualizar contador
+  const contador = document.getElementById("galeriaContador");
+  if (contador) {
+    const actual = parseInt(contador.textContent) || 0;
+    contador.textContent = `${Math.max(0, actual - 1)} foto(s)`;
+  }
+};
 
 // ══════════════════════════════════════════════════════
 // SELECCIONES (auto-carga al cambiar cliente)

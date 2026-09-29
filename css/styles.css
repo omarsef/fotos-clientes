@@ -423,6 +423,34 @@ a {
   display: flex;
 }
 
+.btn-delete-foto {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 32px;
+  height: 32px;
+  background: rgba(180, 30, 30, 0.85);
+  border: none;
+  border-radius: 50%;
+  font-size: 15px;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  transition: background 0.2s;
+  z-index: 10;
+}
+
+.gallery-item:hover .btn-delete-foto {
+  display: flex;
+}
+
+.btn-delete-foto:hover {
+  background: rgba(220, 30, 30, 1);
+}
+
 /* ===== UTILITIES ===== */
 .btn-secondary {
   padding: 10px 24px;
