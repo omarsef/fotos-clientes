@@ -319,9 +319,7 @@ async function subirArchivosCliente(files) {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-    formData.append("folder", `contenidos-clientes/${currentUser.uid}`);
-    if (!isVideo) formData.append("quality", "80");
-
+    // Sin parámetros extra — unsigned presets no los aceptan
     try {
       const res  = await fetch(
         `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${isVideo ? "video" : "image"}/upload`,
@@ -330,8 +328,10 @@ async function subirArchivosCliente(files) {
       const data = await res.json();
       if (data.secure_url) {
         nuevos.push({ url: data.secure_url, publicId: data.public_id, nombre: file.name, tipo: isVideo ? "video" : "imagen", subidoAt: new Date().toISOString() });
+      } else {
+        console.error("Cloudinary error:", data.error?.message || data);
       }
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error("Fetch error:", err); }
 
     done++;
     const bar = document.getElementById("progBarCliente");
@@ -339,12 +339,25 @@ async function subirArchivosCliente(files) {
   }
 
   // Guardar en Firestore bajo contenidosClientes/{uid}
-  const ref      = doc(db, "contenidosClientes", currentUser.uid);
-  const existing = (await getDoc(ref)).data()?.archivos || [];
-  await setDoc(ref, { clienteId: currentUser.uid, nombre: currentUser.nombre, archivos: [...existing, ...nuevos] }, { merge: true });
+  try {
+    const ref       = doc(db, "contenidosClientes", currentUser.uid);
+    const snapRef   = await getDoc(ref);
+    const existing  = snapRef.exists() ? (snapRef.data().archivos || []) : [];
+    const todos     = [...existing, ...nuevos];
 
-  statusEl.innerHTML += `<p style="color:#6fcf97;margin-top:6px;">✅ ${done} archivo(s) subidos.</p>`;
-  cargarArchivosCliente();
+    await setDoc(ref, {
+      clienteId: currentUser.uid,
+      nombre:    currentUser.nombre,
+      archivos:  todos
+    });
+
+    console.log("✅ Guardado en Firestore:", todos.length, "archivos");
+    statusEl.innerHTML += `<p style="color:#6fcf97;margin-top:6px;">✅ ${done} archivo(s) subidos.</p>`;
+    await cargarArchivosCliente();
+  } catch (err) {
+    console.error("❌ Error guardando en Firestore:", err);
+    statusEl.innerHTML += `<p style="color:#e05252;margin-top:6px;">Error al guardar: ${err.message}</p>`;
+  }
 }
 
 async function cargarArchivosCliente() {
