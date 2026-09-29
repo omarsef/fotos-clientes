@@ -6,10 +6,15 @@ import {
   doc, getDoc, getDocs, updateDoc, collection, query, where
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-let currentUser  = null;
-let fotos        = [];       // [{id, url, seleccionada}]
+let currentUser   = null;
+let fotos         = [];
 let seleccionadas = new Set();
-let lightboxIdx  = -1;
+let lightboxIdx   = -1;
+
+// ── Bloquear clic derecho en toda la página ───────────────────
+document.addEventListener("contextmenu", (e) => {
+  if (e.target.tagName === "IMG") e.preventDefault();
+});
 
 // ── Auth guard ───────────────────────────────────────────────
 onAuthStateChanged(auth, async (user) => {
@@ -64,11 +69,24 @@ function renderGaleria() {
     const div = document.createElement("div");
     div.className = "gallery-item" + (seleccionadas.has(foto.id) ? " selected" : "");
     div.innerHTML = `
-      <img src="${foto.url}" alt="foto ${idx + 1}" loading="lazy" />
+      <img src="${foto.url}" alt="foto ${idx + 1}" loading="lazy" draggable="false" />
       <div class="check">✓</div>
+      <div class="zoom-hint">🔍</div>
     `;
-    div.addEventListener("click", () => toggleSeleccion(foto.id));
+
+    // Clic simple = seleccionar/deseleccionar
+    div.addEventListener("click", (e) => {
+      // Si el clic fue en el ícono de zoom, abrir lightbox
+      if (e.target.classList.contains("zoom-hint")) {
+        abrirLightbox(idx);
+        return;
+      }
+      toggleSeleccion(foto.id);
+    });
+
+    // Doble clic = lightbox
     div.addEventListener("dblclick", () => abrirLightbox(idx));
+
     container.appendChild(div);
   });
 }
@@ -99,7 +117,6 @@ document.getElementById("btnConfirm").addEventListener("click", async () => {
   btn.textContent = "Guardando...";
 
   try {
-    // Update all fotos in Firestore
     for (const foto of fotos) {
       await updateDoc(doc(db, "fotos", foto.id), {
         seleccionada: seleccionadas.has(foto.id)
@@ -119,26 +136,50 @@ document.getElementById("btnConfirm").addEventListener("click", async () => {
 function abrirLightbox(idx) {
   lightboxIdx = idx;
   const foto = fotos[idx];
-  document.getElementById("lightboxImg").src = foto.url;
+  const img  = document.getElementById("lightboxImg");
+  img.src = foto.url;
+  img.draggable = false;
   document.getElementById("lightbox").classList.add("open");
+  document.getElementById("lightboxCounter").textContent = `${idx + 1} / ${fotos.length}`;
 
-  const btn = document.getElementById("lightboxSelect");
-  btn.textContent = seleccionadas.has(foto.id) ? "✓ Seleccionada" : "Seleccionar esta foto";
-  btn.onclick = () => {
+  const btnSel = document.getElementById("lightboxSelect");
+  actualizarBtnLightbox(btnSel, foto.id);
+  btnSel.onclick = () => {
     toggleSeleccion(foto.id);
-    btn.textContent = seleccionadas.has(foto.id) ? "✓ Seleccionada" : "Seleccionar esta foto";
+    actualizarBtnLightbox(btnSel, foto.id);
+  };
+
+  // Navegación con flechas del teclado
+  document.onkeydown = (e) => {
+    if (e.key === "ArrowRight") navegarLightbox(1);
+    if (e.key === "ArrowLeft")  navegarLightbox(-1);
+    if (e.key === "Escape")     cerrarLightbox();
   };
 }
 
-document.getElementById("lightboxClose").addEventListener("click", () => {
+function actualizarBtnLightbox(btn, fotoId) {
+  btn.textContent = seleccionadas.has(fotoId) ? "✓ Seleccionada" : "Seleccionar esta foto";
+  btn.style.background = seleccionadas.has(fotoId) ? "#4caf50" : "#c9a84c";
+}
+
+function navegarLightbox(dir) {
+  const nuevoIdx = lightboxIdx + dir;
+  if (nuevoIdx >= 0 && nuevoIdx < fotos.length) abrirLightbox(nuevoIdx);
+}
+
+function cerrarLightbox() {
   document.getElementById("lightbox").classList.remove("open");
+  document.onkeydown = null;
+}
+
+document.getElementById("lightboxClose").addEventListener("click", cerrarLightbox);
+document.getElementById("lightbox").addEventListener("click", (e) => {
+  if (e.target === document.getElementById("lightbox")) cerrarLightbox();
 });
 
-document.getElementById("lightbox").addEventListener("click", (e) => {
-  if (e.target === document.getElementById("lightbox")) {
-    document.getElementById("lightbox").classList.remove("open");
-  }
-});
+// Botones de navegación en el lightbox
+document.getElementById("lightboxPrev").addEventListener("click", () => navegarLightbox(-1));
+document.getElementById("lightboxNext").addEventListener("click", () => navegarLightbox(1));
 
 // ── Toast ────────────────────────────────────────────────────
 function showToast(msg) {

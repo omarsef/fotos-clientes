@@ -27,7 +27,6 @@
       border-radius:4px; color:#fff; font-size:0.9rem; margin-bottom:12px;
     }
     .input-field:focus { outline:none; border-color:#c9a84c; }
-
     select.input-field { cursor:pointer; }
 
     .btn-gold {
@@ -62,21 +61,44 @@
     .progress-bar { background:#c9a84c; height:6px; border-radius:20px; width:0%; transition:width 0.3s; }
 
     .foto-thumb { width:60px; height:45px; object-fit:cover; border-radius:3px; }
-    .status-badge {
-      display:inline-block; padding:3px 10px; border-radius:20px; font-size:0.75rem;
-    }
-    .status-selected { background:#1a3a1a; color:#6fcf97; }
-    .status-pending { background:#2a2a1a; color:#f2c94c; }
 
     #uploadStatus { margin-top:12px; color:#888; font-size:0.85rem; }
-    .tabs { display:flex; gap:4px; margin-bottom:24px; }
-    .tab-btn {
-      padding:9px 20px; border:1px solid #333; border-radius:4px; background:transparent;
-      color:#888; font-size:0.82rem; letter-spacing:1px; text-transform:uppercase; cursor:pointer; transition:all 0.2s;
-    }
-    .tab-btn.active { border-color:#c9a84c; color:#c9a84c; background:rgba(201,168,76,0.07); }
+
     .tab-panel { display:none; }
     .tab-panel.active { display:block; }
+
+    /* Grupos */
+    .grupo-header {
+      display:flex; align-items:center; justify-content:space-between;
+      background:#1a1a1a; border:1px solid #2a2a2a; border-radius:6px;
+      padding:14px 18px; margin-bottom:8px; cursor:pointer;
+    }
+    .grupo-header h4 { font-size:0.95rem; color:#fff; font-weight:400; }
+    .grupo-header .grupo-meta { color:#666; font-size:0.82rem; }
+    .grupo-body { display:none; padding:0 8px 16px; }
+    .grupo-body.open { display:block; }
+
+    /* Analytics */
+    .analytics-grid {
+      display:grid; grid-template-columns:repeat(auto-fill, minmax(180px,1fr)); gap:16px; margin-top:16px;
+    }
+    .analytics-card {
+      background:#1a1a1a; border:1px solid #2a2a2a; border-radius:6px; overflow:hidden;
+    }
+    .analytics-card img { width:100%; aspect-ratio:4/3; object-fit:cover; }
+    .analytics-card .ac-info { padding:10px 12px; }
+    .analytics-card .ac-info .votes {
+      font-size:1.3rem; font-weight:700; color:#c9a84c;
+    }
+    .analytics-card .ac-info p { color:#888; font-size:0.78rem; margin-top:2px; }
+
+    .stat-row { display:flex; gap:20px; margin-bottom:24px; flex-wrap:wrap; }
+    .stat-box {
+      flex:1; min-width:140px; background:#1a1a1a; border:1px solid #222;
+      border-radius:6px; padding:18px 20px; text-align:center;
+    }
+    .stat-box .num { font-size:2rem; font-weight:700; color:#c9a84c; }
+    .stat-box .lbl { color:#666; font-size:0.78rem; letter-spacing:1px; text-transform:uppercase; margin-top:4px; }
   </style>
 </head>
 <body>
@@ -95,24 +117,50 @@
     <!-- SIDEBAR -->
     <aside class="sidebar">
       <h3>Panel</h3>
-      <a href="#" class="active" data-tab="usuarios">👤 Usuarios</a>
+      <a href="#" class="active" data-tab="grupos">📁 Grupos</a>
+      <a href="#" data-tab="usuarios">👤 Clientes</a>
       <a href="#" data-tab="subir">📤 Subir Fotos</a>
       <a href="#" data-tab="galerias">🖼 Galerías</a>
       <a href="#" data-tab="selecciones">✅ Selecciones</a>
+      <a href="#" data-tab="analytics">📊 Analytics</a>
     </aside>
 
     <!-- MAIN -->
     <main class="main-content">
 
+      <!-- TAB: GRUPOS -->
+      <div class="tab-panel active" id="tab-grupos">
+        <h1>Grupos</h1>
+
+        <div class="card">
+          <h3>Crear nuevo grupo</h3>
+          <input class="input-field" type="text" id="nuevoGrupoNombre" placeholder="Ej: Colegio Nro 5 — 6to grado A" />
+          <select class="input-field" id="nuevoGrupoCategoria">
+            <option value="">-- Categoría --</option>
+            <option value="escolar">Escolar</option>
+            <option value="social">Social</option>
+            <option value="deportiva">Deportiva</option>
+            <option value="artistica">Artística</option>
+          </select>
+          <button class="btn-gold" id="btnCrearGrupo">Crear grupo</button>
+          <p id="msgGrupo" style="margin-top:10px;font-size:0.85rem;color:#6fcf97;display:none;"></p>
+        </div>
+
+        <div class="card">
+          <h3>Grupos existentes</h3>
+          <div id="listaGrupos"><p style="color:#555">Cargando...</p></div>
+        </div>
+      </div>
+
       <!-- TAB: USUARIOS -->
-      <div class="tab-panel active" id="tab-usuarios">
-        <h1>Gestión de Usuarios</h1>
+      <div class="tab-panel" id="tab-usuarios">
+        <h1>Gestión de Clientes</h1>
 
         <div class="card">
           <h3>Crear nuevo cliente</h3>
-          <input class="input-field" type="text"  id="nuevoNombre"  placeholder="Nombre completo" />
-          <input class="input-field" type="email" id="nuevoEmail"   placeholder="Email del cliente" />
-          <input class="input-field" type="password" id="nuevaPassword" placeholder="Contraseña (mín. 6 caracteres)" />
+          <input class="input-field" type="text"     id="nuevoNombre"    placeholder="Nombre completo" />
+          <input class="input-field" type="email"    id="nuevoEmail"     placeholder="Email del cliente" />
+          <input class="input-field" type="password" id="nuevaPassword"  placeholder="Contraseña (mín. 6 caracteres)" />
           <select class="input-field" id="nuevaCategoria">
             <option value="">-- Categoría / Disciplina --</option>
             <option value="escolar">Escolar</option>
@@ -120,8 +168,11 @@
             <option value="deportiva">Deportiva</option>
             <option value="artistica">Artística</option>
           </select>
+          <select class="input-field" id="nuevoGrupo">
+            <option value="">-- Asignar a grupo (opcional) --</option>
+          </select>
           <button class="btn-gold" id="btnCrearUsuario">Crear cliente</button>
-          <p id="msgUsuario" style="margin-top:10px; font-size:0.85rem; color:#6fcf97; display:none;"></p>
+          <p id="msgUsuario" style="margin-top:10px;font-size:0.85rem;color:#6fcf97;display:none;"></p>
         </div>
 
         <div class="card">
@@ -132,12 +183,13 @@
                 <th>Nombre</th>
                 <th>Email</th>
                 <th>Categoría</th>
+                <th>Grupo</th>
                 <th>Fotos</th>
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody id="tablaUsuarios">
-              <tr><td colspan="5" style="color:#555;">Cargando...</td></tr>
+              <tr><td colspan="6" style="color:#555;">Cargando...</td></tr>
             </tbody>
           </table>
         </div>
@@ -158,7 +210,7 @@
           <h3>Cargar imágenes</h3>
           <div class="upload-zone" id="uploadZone">
             <p>📷 Arrastrá las fotos acá o <span>hacé clic para seleccionar</span></p>
-            <p style="margin-top:8px; font-size:0.78rem; color:#555;">Se subirán en baja calidad con marca de agua automáticamente</p>
+            <p style="margin-top:8px;font-size:0.78rem;color:#555;">Se subirán en baja calidad con marca de agua automáticamente</p>
           </div>
           <input type="file" id="fileInput" multiple accept="image/*" />
           <div id="uploadStatus"></div>
@@ -193,7 +245,33 @@
         <div class="card">
           <h3>Fotos marcadas para imprimir</h3>
           <div id="listaSelecciones" class="gallery-grid"></div>
-          <p id="msgSelecciones" style="color:#555; font-size:0.9rem; display:none;">Este cliente aún no seleccionó fotos.</p>
+          <p id="msgSelecciones" style="color:#555;font-size:0.9rem;display:none;">Este cliente aún no seleccionó fotos.</p>
+        </div>
+      </div>
+
+      <!-- TAB: ANALYTICS -->
+      <div class="tab-panel" id="tab-analytics">
+        <h1>Analytics</h1>
+
+        <div class="stat-row" id="statsGlobales">
+          <div class="stat-box"><div class="num" id="statClientes">-</div><div class="lbl">Clientes</div></div>
+          <div class="stat-box"><div class="num" id="statFotos">-</div><div class="lbl">Fotos totales</div></div>
+          <div class="stat-box"><div class="num" id="statSeleccionadas">-</div><div class="lbl">Seleccionadas</div></div>
+          <div class="stat-box"><div class="num" id="statGrupos">-</div><div class="lbl">Grupos</div></div>
+        </div>
+
+        <div class="card">
+          <h3>Filtrar por grupo</h3>
+          <select class="input-field" id="grupoAnalytics">
+            <option value="">-- Todos los grupos --</option>
+          </select>
+          <button class="btn-gold" style="margin-top:4px;" id="btnCargarAnalytics">Ver fotos más seleccionadas</button>
+        </div>
+
+        <div class="card">
+          <h3>Fotos más seleccionadas</h3>
+          <div id="analyticsGrid" class="analytics-grid"></div>
+          <p id="msgAnalytics" style="color:#555;font-size:0.9rem;display:none;">No hay selecciones aún en este grupo.</p>
         </div>
       </div>
 

@@ -48,21 +48,52 @@
     }
     .empty-state p { font-size: 1rem; letter-spacing: 1px; }
 
+    /* Zoom hint */
+    .zoom-hint {
+      position: absolute; top: 8px; left: 8px;
+      background: rgba(0,0,0,0.6); border-radius: 50%;
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; opacity: 0; transition: opacity 0.2s; cursor: pointer;
+    }
+    .gallery-item:hover .zoom-hint { opacity: 1; }
+
     /* Lightbox */
     .lightbox {
       display: none; position: fixed; inset: 0; z-index: 999;
-      background: rgba(0,0,0,0.93);
+      background: rgba(0,0,0,0.96);
       align-items: center; justify-content: center;
+      flex-direction: column;
     }
     .lightbox.open { display: flex; }
-    .lightbox img { max-width: 90vw; max-height: 90vh; object-fit: contain; border-radius:4px; }
-    .lightbox-close {
-      position: absolute; top: 20px; right: 28px;
-      font-size: 2rem; color: #fff; cursor: pointer; background: none; border: none;
+    .lightbox-img-wrap {
+      position: relative; display: flex; align-items: center; justify-content: center;
+      max-width: 92vw; max-height: 80vh;
     }
+    .lightbox img {
+      max-width: 90vw; max-height: 78vh;
+      object-fit: contain; border-radius: 4px;
+      user-select: none; -webkit-user-drag: none;
+    }
+    .lightbox-close {
+      position: absolute; top: 18px; right: 24px;
+      font-size: 1.8rem; color: #fff; cursor: pointer; background: none; border: none;
+      line-height: 1; z-index: 10;
+    }
+    .lightbox-nav {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      background: rgba(255,255,255,0.1); border: none; color: #fff;
+      font-size: 1.6rem; padding: 10px 16px; cursor: pointer; border-radius: 4px;
+      transition: background 0.2s;
+    }
+    .lightbox-nav:hover { background: rgba(255,255,255,0.2); }
+    .lightbox-nav.prev { left: -56px; }
+    .lightbox-nav.next { right: -56px; }
     .lightbox-actions {
-      position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
-      display: flex; gap: 16px;
+      margin-top: 18px; display: flex; gap: 16px; align-items: center;
+    }
+    .lightbox-counter {
+      color: #888; font-size: 0.85rem; letter-spacing: 1px;
     }
 
     .toast {
@@ -89,7 +120,7 @@
 
     <div class="welcome-bar">
       <h1>Hola, <span id="clientName">cliente</span></h1>
-      <p>Hacé clic en las fotos que más te gustan para seleccionarlas. Cuando termines, confirmá tu selección.</p>
+      <p>Hacé clic en las fotos que más te gustan para seleccionarlas. Doble clic o 🔍 para verlas en grande.</p>
     </div>
 
     <div class="selection-bar">
@@ -108,9 +139,14 @@
   <!-- LIGHTBOX -->
   <div class="lightbox" id="lightbox">
     <button class="lightbox-close" id="lightboxClose">✕</button>
-    <img id="lightboxImg" src="" alt="" />
+    <div class="lightbox-img-wrap">
+      <button class="lightbox-nav prev" id="lightboxPrev">&#8249;</button>
+      <img id="lightboxImg" src="" alt="" />
+      <button class="lightbox-nav next" id="lightboxNext">&#8250;</button>
+    </div>
     <div class="lightbox-actions">
       <button class="btn-confirm" id="lightboxSelect">Seleccionar esta foto</button>
+      <span class="lightbox-counter" id="lightboxCounter"></span>
     </div>
   </div>
 

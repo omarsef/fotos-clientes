@@ -1,4 +1,4 @@
-import { auth, db, CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_UPLOAD_PRESET, firebaseConfig } from "./firebase-config.js";
+import { auth, db, CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET, firebaseConfig } from "./firebase-config.js";
 import {
   onAuthStateChanged, signOut,
   createUserWithEmailAndPassword,
@@ -6,8 +6,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
-  doc, setDoc, getDoc, getDocs, collection,
-  updateDoc, increment, query, where
+  doc, setDoc, getDoc, getDocs, addDoc, collection,
+  updateDoc, increment, query, where, orderBy
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // ── Auth guard ───────────────────────────────────────────────
@@ -32,47 +32,162 @@ function init() {
       document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
       a.classList.add("active");
       document.getElementById("tab-" + a.dataset.tab).classList.add("active");
+      if (a.dataset.tab === "analytics") cargarAnalytics();
     });
   });
 
+  cargarGrupos();
   cargarUsuarios();
+  setupCrearGrupo();
   setupCrearUsuario();
   setupSubirFotos();
   setupGaleriaAdmin();
   setupSelecciones();
+  setupAnalytics();
 }
 
-// ── Crear usuario cliente (sin perder sesión admin) ──────────
+// ══════════════════════════════════════════════════════
+// GRUPOS
+// ══════════════════════════════════════════════════════
+function setupCrearGrupo() {
+  document.getElementById("btnCrearGrupo").addEventListener("click", async () => {
+    const nombre    = document.getElementById("nuevoGrupoNombre").value.trim();
+    const categoria = document.getElementById("nuevoGrupoCategoria").value;
+    const msg       = document.getElementById("msgGrupo");
+
+    if (!nombre || !categoria) { alert("Completá nombre y categoría."); return; }
+
+    await addDoc(collection(db, "grupos"), {
+      nombre, categoria, createdAt: new Date()
+    });
+
+    msg.style.display = "block";
+    msg.textContent = `✅ Grupo "${nombre}" creado.`;
+    setTimeout(() => { msg.style.display = "none"; }, 3000);
+
+    document.getElementById("nuevoGrupoNombre").value = "";
+    document.getElementById("nuevoGrupoCategoria").value = "";
+
+    cargarGrupos();
+    popularSelectGrupos();
+  });
+}
+
+async function cargarGrupos() {
+  const container = document.getElementById("listaGrupos");
+  container.innerHTML = "<p style='color:#555'>Cargando...</p>";
+
+  const gruposSnap = await getDocs(collection(db, "grupos"));
+  if (gruposSnap.empty) {
+    container.innerHTML = "<p style='color:#555'>No hay grupos aún.</p>";
+    return;
+  }
+
+  container.innerHTML = "";
+
+  for (const gDoc of gruposSnap.docs) {
+    const g = gDoc.data();
+
+    // Contar clientes en este grupo
+    const clientesSnap = await getDocs(query(
+      collection(db, "usuarios"),
+      where("role", "==", "cliente"),
+      where("grupoId", "==", gDoc.id)
+    ));
+
+    const wrap = document.createElement("div");
+    wrap.innerHTML = `
+      <div class="grupo-header" onclick="toggleGrupo('${gDoc.id}')">
+        <div>
+          <h4>📁 ${g.nombre}</h4>
+          <div class="grupo-meta">${g.categoria} · ${clientesSnap.size} cliente(s)</div>
+        </div>
+        <button class="btn-danger" onclick="event.stopPropagation(); eliminarGrupo('${gDoc.id}','${g.nombre}')">Eliminar</button>
+      </div>
+      <div class="grupo-body" id="grupo-body-${gDoc.id}">
+        <table style="margin-top:8px;">
+          <thead><tr><th>Nombre</th><th>Email</th><th>Fotos</th></tr></thead>
+          <tbody>
+            ${clientesSnap.empty
+              ? `<tr><td colspan="3" style="color:#555">Sin clientes en este grupo.</td></tr>`
+              : clientesSnap.docs.map(d => `
+                <tr>
+                  <td>${d.data().nombre}</td>
+                  <td style="color:#888">${d.data().email}</td>
+                  <td>${d.data().fotosCount || 0}</td>
+                </tr>`).join("")
+            }
+          </tbody>
+        </table>
+      </div>
+    `;
+    container.appendChild(wrap);
+  }
+}
+
+window.toggleGrupo = (id) => {
+  const body = document.getElementById("grupo-body-" + id);
+  if (body) body.classList.toggle("open");
+};
+
+window.eliminarGrupo = async (id, nombre) => {
+  if (!confirm(`¿Eliminar el grupo "${nombre}"? Los clientes no se borran.`)) return;
+  await setDoc(doc(db, "grupos", id), { eliminado: true }, { merge: true });
+  cargarGrupos();
+};
+
+async function popularSelectGrupos() {
+  const selects = ["nuevoGrupo", "grupoAnalytics"];
+  const snap = await getDocs(collection(db, "grupos"));
+
+  selects.forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const firstOpt = id === "nuevoGrupo"
+      ? '<option value="">-- Asignar a grupo (opcional) --</option>'
+      : '<option value="">-- Todos los grupos --</option>';
+    sel.innerHTML = firstOpt;
+    snap.forEach(d => {
+      if (d.data().eliminado) return;
+      const opt = document.createElement("option");
+      opt.value = d.id;
+      opt.textContent = d.data().nombre;
+      sel.appendChild(opt);
+    });
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// USUARIOS
+// ══════════════════════════════════════════════════════
 function setupCrearUsuario() {
   document.getElementById("btnCrearUsuario").addEventListener("click", async () => {
     const nombre    = document.getElementById("nuevoNombre").value.trim();
     const email     = document.getElementById("nuevoEmail").value.trim();
     const password  = document.getElementById("nuevaPassword").value;
     const categoria = document.getElementById("nuevaCategoria").value;
+    const grupoId   = document.getElementById("nuevoGrupo").value;
     const msg       = document.getElementById("msgUsuario");
     const btn       = document.getElementById("btnCrearUsuario");
 
     if (!nombre || !email || !password || !categoria) {
-      alert("Completá todos los campos."); return;
+      alert("Completá todos los campos obligatorios."); return;
     }
 
     btn.disabled = true;
     btn.textContent = "Creando...";
 
     try {
-      // Usamos una segunda app temporal para crear el usuario
-      // sin afectar la sesión del admin
       const secondaryApp  = initializeApp(firebaseConfig, "secondary");
       const secondaryAuth = getAuth(secondaryApp);
-
       const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password);
 
-      // Guardamos en Firestore usando la conexión principal (admin sigue logueado)
       await setDoc(doc(db, "usuarios", cred.user.uid), {
-        nombre, email, role: "cliente", categoria, fotosCount: 0, createdAt: new Date()
+        nombre, email, role: "cliente", categoria,
+        grupoId: grupoId || null,
+        fotosCount: 0, createdAt: new Date()
       });
 
-      // Cerramos la app secundaria — la sesión admin no se tocó
       await deleteApp(secondaryApp);
 
       msg.style.display = "block";
@@ -82,11 +197,11 @@ function setupCrearUsuario() {
       cargarUsuarios();
       popularSelectClientes();
 
-      // Limpiar campos
       document.getElementById("nuevoNombre").value = "";
       document.getElementById("nuevoEmail").value = "";
       document.getElementById("nuevaPassword").value = "";
       document.getElementById("nuevaCategoria").value = "";
+      document.getElementById("nuevoGrupo").value = "";
 
     } catch (err) {
       alert("Error: " + err.message);
@@ -97,40 +212,50 @@ function setupCrearUsuario() {
   });
 }
 
-// ── Cargar tabla de usuarios ──────────────────────────────────
 async function cargarUsuarios() {
   const tbody = document.getElementById("tablaUsuarios");
-  tbody.innerHTML = "<tr><td colspan='5' style='color:#555'>Cargando...</td></tr>";
+  tbody.innerHTML = "<tr><td colspan='6' style='color:#555'>Cargando...</td></tr>";
 
-  const snap = await getDocs(query(collection(db, "usuarios"), where("role", "==", "cliente")));
-  if (snap.empty) {
-    tbody.innerHTML = "<tr><td colspan='5' style='color:#555'>No hay clientes aún.</td></tr>";
+  const [usuariosSnap, gruposSnap] = await Promise.all([
+    getDocs(query(collection(db, "usuarios"), where("role", "==", "cliente"))),
+    getDocs(collection(db, "grupos"))
+  ]);
+
+  const gruposMap = {};
+  gruposSnap.forEach(d => { gruposMap[d.id] = d.data().nombre; });
+
+  if (usuariosSnap.empty) {
+    tbody.innerHTML = "<tr><td colspan='6' style='color:#555'>No hay clientes aún.</td></tr>";
     return;
   }
 
   tbody.innerHTML = "";
-  snap.forEach(d => {
+  usuariosSnap.forEach(d => {
     const u = d.data();
+    if (u.eliminado) return;
+    const grupoNombre = u.grupoId ? (gruposMap[u.grupoId] || "-") : "-";
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${u.nombre}</td>
       <td style="color:#888">${u.email}</td>
       <td><span class="tag tag-cliente">${u.categoria || "-"}</span></td>
+      <td style="color:#888;font-size:0.82rem">${grupoNombre}</td>
       <td>${u.fotosCount || 0}</td>
       <td><button class="btn-danger" onclick="eliminarUsuario('${d.id}','${u.nombre}')">Eliminar</button></td>
     `;
     tbody.appendChild(tr);
   });
+
+  popularSelectGrupos();
+  popularSelectClientes();
 }
 
 window.eliminarUsuario = async (uid, nombre) => {
   if (!confirm(`¿Eliminar al cliente "${nombre}"?`)) return;
-  // Only remove Firestore record (Firebase Auth deletion requires Admin SDK)
   await setDoc(doc(db, "usuarios", uid), { eliminado: true }, { merge: true });
   cargarUsuarios();
 };
 
-// ── Popular selects de clientes ──────────────────────────────
 async function popularSelectClientes() {
   const selects = ["clienteParaSubir", "clienteParaGaleria", "clienteSelecciones"];
   const snap = await getDocs(query(collection(db, "usuarios"), where("role", "==", "cliente")));
@@ -140,15 +265,18 @@ async function popularSelectClientes() {
     if (!sel) return;
     sel.innerHTML = '<option value="">-- Seleccioná un cliente --</option>';
     snap.forEach(d => {
+      if (d.data().eliminado) return;
       const opt = document.createElement("option");
       opt.value = d.id;
-      opt.textContent = d.data().nombre + " (" + d.data().categoria + ")";
+      opt.textContent = d.data().nombre + " (" + (d.data().categoria || "-") + ")";
       sel.appendChild(opt);
     });
   });
 }
 
-// ── Subir fotos a Cloudinary ──────────────────────────────────
+// ══════════════════════════════════════════════════════
+// SUBIR FOTOS
+// ══════════════════════════════════════════════════════
 function setupSubirFotos() {
   popularSelectClientes();
 
@@ -183,28 +311,20 @@ async function handleFiles(files) {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-    // Baja calidad + marca de agua via transformation en el upload preset
     formData.append("folder", `clientes/${clienteId}`);
     formData.append("quality", "40");
     formData.append("width", "1200");
     formData.append("crop", "limit");
 
     try {
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
-        method: "POST",
-        body: formData
-      });
+      const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, { method: "POST", body: formData });
       const data = await res.json();
 
       if (data.secure_url) {
-        // Save to Firestore
         const fotoId = data.public_id.replace(/\//g, "_");
         await setDoc(doc(db, "fotos", fotoId), {
-          clienteId,
-          url: data.secure_url,
-          publicId: data.public_id,
-          seleccionada: false,
-          uploadedAt: new Date()
+          clienteId, url: data.secure_url, publicId: data.public_id,
+          seleccionada: false, uploadedAt: new Date()
         });
         await updateDoc(doc(db, "usuarios", clienteId), { fotosCount: increment(1) });
       }
@@ -213,14 +333,17 @@ async function handleFiles(files) {
     }
 
     done++;
-    document.getElementById("progBar").style.width = Math.round((done / total) * 100) + "%";
+    const bar = document.getElementById("progBar");
+    if (bar) bar.style.width = Math.round((done / total) * 100) + "%";
   }
 
-  statusEl.innerHTML += `<p style="color:#6fcf97; margin-top:8px;">✅ ${done} foto(s) subidas correctamente.</p>`;
+  statusEl.innerHTML += `<p style="color:#6fcf97;margin-top:8px;">✅ ${done} foto(s) subidas correctamente.</p>`;
   cargarUsuarios();
 }
 
-// ── Galería admin (ver fotos de un cliente) ──────────────────
+// ══════════════════════════════════════════════════════
+// GALERÍA ADMIN
+// ══════════════════════════════════════════════════════
 function setupGaleriaAdmin() {
   document.getElementById("btnVerGaleria").addEventListener("click", async () => {
     const clienteId = document.getElementById("clienteParaGaleria").value;
@@ -235,17 +358,17 @@ function setupGaleriaAdmin() {
     container.innerHTML = "";
     snap.forEach(d => {
       const foto = d.data();
-      const div = document.createElement("div");
-      div.className = "gallery-item";
-      div.innerHTML = `<img src="${foto.url}" alt="foto" />
-        <div class="check">✓</div>`;
-      if (foto.seleccionada) div.classList.add("selected");
+      const div  = document.createElement("div");
+      div.className = "gallery-item" + (foto.seleccionada ? " selected" : "");
+      div.innerHTML = `<img src="${foto.url}" alt="foto" /><div class="check">✓</div>`;
       container.appendChild(div);
     });
   });
 }
 
-// ── Ver selecciones del cliente ──────────────────────────────
+// ══════════════════════════════════════════════════════
+// SELECCIONES
+// ══════════════════════════════════════════════════════
 function setupSelecciones() {
   document.getElementById("btnVerSelecciones").addEventListener("click", async () => {
     const clienteId = document.getElementById("clienteSelecciones").value;
@@ -266,10 +389,97 @@ function setupSelecciones() {
 
     snap.forEach(d => {
       const foto = d.data();
-      const div = document.createElement("div");
+      const div  = document.createElement("div");
       div.className = "gallery-item selected";
       div.innerHTML = `<img src="${foto.url}" alt="foto seleccionada" /><div class="check">✓</div>`;
       container.appendChild(div);
     });
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// ANALYTICS
+// ══════════════════════════════════════════════════════
+function setupAnalytics() {
+  document.getElementById("btnCargarAnalytics").addEventListener("click", cargarAnalytics);
+}
+
+async function cargarAnalytics() {
+  // Stats globales
+  const [clientesSnap, fotosSnap, gruposSnap] = await Promise.all([
+    getDocs(query(collection(db, "usuarios"), where("role", "==", "cliente"))),
+    getDocs(collection(db, "fotos")),
+    getDocs(collection(db, "grupos"))
+  ]);
+
+  let totalSeleccionadas = 0;
+  fotosSnap.forEach(d => { if (d.data().seleccionada) totalSeleccionadas++; });
+
+  document.getElementById("statClientes").textContent      = clientesSnap.size;
+  document.getElementById("statFotos").textContent         = fotosSnap.size;
+  document.getElementById("statSeleccionadas").textContent = totalSeleccionadas;
+  document.getElementById("statGrupos").textContent        = gruposSnap.size;
+
+  // Popular select de grupos
+  const grupoSel = document.getElementById("grupoAnalytics");
+  if (grupoSel.options.length <= 1) popularSelectGrupos();
+
+  // Fotos más seleccionadas
+  const grupoId   = document.getElementById("grupoAnalytics").value;
+  const container = document.getElementById("analyticsGrid");
+  const msgEl     = document.getElementById("msgAnalytics");
+  container.innerHTML = "<p style='color:#555'>Calculando...</p>";
+  msgEl.style.display = "none";
+
+  // Obtener clientes del grupo (o todos)
+  let clienteIds = [];
+  if (grupoId) {
+    const cSnap = await getDocs(query(collection(db, "usuarios"), where("grupoId", "==", grupoId), where("role", "==", "cliente")));
+    cSnap.forEach(d => clienteIds.push(d.id));
+  } else {
+    clientesSnap.forEach(d => clienteIds.push(d.id));
+  }
+
+  if (clienteIds.length === 0) {
+    container.innerHTML = "";
+    msgEl.style.display = "block";
+    return;
+  }
+
+  // Contar selecciones por foto
+  const conteo = {}; // publicId → {url, count}
+  for (const cId of clienteIds) {
+    const fSnap = await getDocs(query(
+      collection(db, "fotos"),
+      where("clienteId", "==", cId),
+      where("seleccionada", "==", true)
+    ));
+    fSnap.forEach(d => {
+      const f = d.data();
+      if (!conteo[d.id]) conteo[d.id] = { url: f.url, count: 0 };
+      conteo[d.id].count++;
+    });
+  }
+
+  const sorted = Object.values(conteo).sort((a, b) => b.count - a.count).slice(0, 20);
+
+  if (sorted.length === 0) {
+    container.innerHTML = "";
+    msgEl.style.display = "block";
+    return;
+  }
+
+  container.innerHTML = "";
+  sorted.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "analytics-card";
+    div.innerHTML = `
+      <img src="${item.url}" alt="foto" />
+      <div class="ac-info">
+        <div class="votes">${item.count}</div>
+        <p>${item.count === 1 ? "1 cliente la eligió" : `${item.count} clientes la eligieron`}</p>
+      </div>
+    `;
+    container.appendChild(div);
   });
 }
