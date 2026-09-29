@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mi Proyecto · TresEles</title>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <style>
+    .client-topbar {
+      position:fixed; top:0; left:0; right:0; z-index:100;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 32px; background:#111; border-bottom:1px solid #222;
+    }
+    .client-topbar .logo { font-size:1.2rem; font-weight:700; letter-spacing:3px; color:#fff; }
+    .client-topbar .logo span { color:#c9a84c; }
+    .client-topbar .user-info { display:flex; align-items:center; gap:16px; }
+    .client-topbar .user-info span { color:#888; font-size:0.85rem; }
+
+    .proyecto-body { padding-top:65px; max-width:900px; margin:0 auto; padding-left:20px; padding-right:20px; }
+
+    .welcome-bar { padding:32px 0 20px; border-bottom:1px solid #222; margin-bottom:28px; }
+    .welcome-bar h1 { font-size:1.4rem; font-weight:300; letter-spacing:3px; text-transform:uppercase; color:#fff; }
+    .welcome-bar p { color:#888; margin-top:8px; font-size:0.9rem; }
+
+    .estado-bar {
+      display:flex; align-items:center; justify-content:space-between;
+      background:#161616; border:1px solid #2a2a2a; border-radius:6px;
+      padding:14px 22px; margin-bottom:28px;
+    }
+    .estado-bar p { color:#aaa; font-size:0.85rem; }
+    #estadoProyecto {
+      padding:5px 14px; border-radius:20px; font-size:0.82rem;
+      font-weight:700; letter-spacing:1px;
+    }
+
+    .nav-proyecto { display:flex; gap:4px; margin-bottom:28px; border-bottom:1px solid #222; }
+    .nav-btn {
+      padding:10px 20px; background:transparent; border:none; border-bottom:2px solid transparent;
+      color:#666; font-size:0.85rem; letter-spacing:1px; text-transform:uppercase; cursor:pointer;
+      transition:all 0.2s; margin-bottom:-1px;
+    }
+    .nav-btn.active { color:#c9a84c; border-bottom-color:#c9a84c; }
+
+    .paso-panel { display:none; }
+    .paso-panel.active { display:block; }
+
+    .card { background:#161616; border:1px solid #222; border-radius:6px; padding:24px; margin-bottom:20px; }
+    .card h3 { font-size:0.82rem; letter-spacing:2px; text-transform:uppercase; color:#888; margin-bottom:18px; }
+
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    @media(max-width:600px){ .form-row { grid-template-columns:1fr; } }
+
+    .f-group { margin-bottom:16px; }
+    .f-group label { display:block; font-size:0.78rem; letter-spacing:1px; text-transform:uppercase; color:#888; margin-bottom:8px; }
+    .f-group select, .f-group input, .f-group textarea {
+      width:100%; padding:10px 14px; background:#0d0d0d; border:1px solid #333;
+      border-radius:4px; color:#fff; font-size:0.9rem; transition:border-color 0.2s;
+    }
+    .f-group select:focus, .f-group input:focus, .f-group textarea:focus { outline:none; border-color:#c9a84c; }
+    .f-group textarea { min-height:100px; resize:vertical; }
+
+    .btn-gold {
+      padding:11px 28px; background:#c9a84c; border:none; border-radius:4px;
+      color:#000; font-weight:700; font-size:0.85rem; letter-spacing:2px;
+      text-transform:uppercase; cursor:pointer; transition:background 0.2s;
+    }
+    .btn-gold:hover { background:#e0be6a; }
+    .btn-gold:disabled { background:#444; color:#777; cursor:not-allowed; }
+
+    /* Upload */
+    .upload-zone {
+      border:2px dashed #333; border-radius:6px; padding:36px;
+      text-align:center; cursor:pointer; transition:border-color 0.2s;
+    }
+    .upload-zone:hover { border-color:#c9a84c; }
+    .upload-zone p { color:#666; font-size:0.9rem; }
+    .upload-zone p span { color:#c9a84c; }
+    .upload-zone .size-note { margin-top:10px; font-size:0.78rem; color:#555; }
+    #fileInputProyecto { display:none; }
+    .progress-bar-wrap { background:#222; border-radius:20px; height:6px; margin:8px 0; }
+    .progress-bar { background:#c9a84c; height:6px; border-radius:20px; width:0%; transition:width 0.3s; }
+    #uploadStatusProyecto { margin-top:12px; font-size:0.85rem; color:#888; }
+    #rejectedFiles { color:#e05252; font-size:0.85rem; margin-top:10px; display:block; }
+
+    /* Archivos subidos */
+    .archivos-grid {
+      display:grid; grid-template-columns:repeat(auto-fill, minmax(140px,1fr)); gap:10px; margin-top:16px;
+    }
+    .archivo-item {
+      position:relative; background:#1a1a1a; border:1px solid #222; border-radius:6px;
+      overflow:hidden; aspect-ratio:4/3;
+    }
+    .archivo-label {
+      position:absolute; bottom:0; left:0; right:0;
+      background:rgba(0,0,0,0.75); font-size:0.7rem; color:#ccc;
+      padding:4px 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+
+    /* Drive */
+    .drive-box {
+      background:#1a2a1a; border:1px solid #2a4a2a; border-radius:6px;
+      padding:18px 22px; margin-top:16px;
+    }
+    .drive-box p { color:#aaa; font-size:0.9rem; }
+    .drive-box a {
+      display:inline-block; margin-top:10px; padding:10px 22px;
+      background:#2a4a2a; border:1px solid #4a7a4a; border-radius:4px;
+      color:#6fcf97; font-size:0.85rem; text-decoration:none; letter-spacing:1px;
+      transition:background 0.2s;
+    }
+    .drive-box a:hover { background:#3a6a3a; }
+
+    /* Comentarios */
+    #listaComentarios {
+      max-height:320px; overflow-y:auto; display:flex; flex-direction:column; gap:10px; margin-bottom:16px;
+    }
+    .comentario-item { padding:12px 16px; border-radius:6px; max-width:80%; }
+    .comentario-item.cliente { background:#1a2a3a; align-self:flex-end; }
+    .comentario-item.admin   { background:#1a1a1a; border:1px solid #2a2a2a; align-self:flex-start; }
+    .comentario-autor { font-size:0.72rem; color:#888; letter-spacing:1px; text-transform:uppercase; display:block; margin-bottom:4px; }
+    .comentario-item p { font-size:0.9rem; color:#ddd; }
+    .comentario-fecha { font-size:0.7rem; color:#555; display:block; margin-top:4px; }
+    .comentario-input { display:flex; gap:10px; }
+    .comentario-input input {
+      flex:1; padding:10px 14px; background:#0d0d0d; border:1px solid #333;
+      border-radius:4px; color:#fff; font-size:0.9rem;
+    }
+    .comentario-input input:focus { outline:none; border-color:#c9a84c; }
+    .btn-send {
+      padding:10px 20px; background:#c9a84c; border:none; border-radius:4px;
+      color:#000; font-weight:700; cursor:pointer; font-size:0.85rem; transition:background 0.2s;
+    }
+    .btn-send:hover { background:#e0be6a; }
+
+    /* Nav entre páginas */
+    .back-link { display:inline-block; margin:24px 0 0; color:#666; font-size:0.82rem; letter-spacing:1px; }
+    .back-link:hover { color:#c9a84c; }
+  </style>
+</head>
+<body>
+  <script>
+    document.addEventListener("contextmenu", e => e.preventDefault());
+    document.addEventListener("dragstart", e => { if(e.target.tagName==="IMG") e.preventDefault(); });
+  </script>
+
+  <!-- TOPBAR -->
+  <header class="client-topbar">
+    <div class="logo">TRES<span>ELES</span></div>
+    <div class="user-info">
+      <span id="clientEmail"></span>
+      <button class="btn-secondary" onclick="logout()">Salir</button>
+    </div>
+  </header>
+
+  <div class="proyecto-body">
+
+    <div class="welcome-bar">
+      <h1>Mi Proyecto · <span id="clientName" style="color:#c9a84c;"></span></h1>
+      <p>Contanos tu idea, subí el material y seguí el estado de tu proyecto audiovisual.</p>
+    </div>
+
+    <!-- Estado -->
+    <div class="estado-bar">
+      <p>Estado actual:</p>
+      <span id="estadoProyecto" style="background:#1a1a1a;color:#666;">Cargando...</span>
+    </div>
+
+    <!-- Navegación interna -->
+    <div class="nav-proyecto">
+      <button class="nav-btn active" data-paso="formulario">💡 Mi idea</button>
+      <button class="nav-btn" data-paso="archivos">📁 Mis archivos</button>
+      <button class="nav-btn" data-paso="mensajes">💬 Mensajes</button>
+    </div>
+
+    <!-- PASO 1: FORMULARIO -->
+    <div class="paso-panel active" id="paso-formulario">
+      <div class="card">
+        <h3>Contanos tu idea</h3>
+        <form id="proyectoForm">
+          <div class="form-row">
+            <div class="f-group">
+              <label>¿Qué tipo de contenido querés?</label>
+              <select id="f_tipoContenido">
+                <option value="">-- Seleccioná --</option>
+                <option value="video_foto">Video con fotos</option>
+                <option value="video_video">Video con clips de video</option>
+                <option value="video_mixto">Video mixto (fotos y video)</option>
+                <option value="slideshow">Slideshow / presentación</option>
+                <option value="otro">Otro</option>
+              </select>
+            </div>
+            <div class="f-group">
+              <label>¿Qué estilo te gusta?</label>
+              <select id="f_estilo">
+                <option value="">-- Seleccioná --</option>
+                <option value="emotivo">Emotivo / sentimental</option>
+                <option value="energico">Enérgico / dinámico</option>
+                <option value="elegante">Elegante / cinematográfico</option>
+                <option value="divertido">Divertido / colorido</option>
+                <option value="sin_preferencia">Sin preferencia</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="f-group">
+              <label>¿Tenés alguna música en mente?</label>
+              <input type="text" id="f_musica" placeholder="Ej: algo con piano, canción específica..."/>
+            </div>
+            <div class="f-group">
+              <label>Duración aproximada</label>
+              <select id="f_duracion">
+                <option value="">-- Seleccioná --</option>
+                <option value="menos2">Menos de 2 minutos</option>
+                <option value="2a5">Entre 2 y 5 minutos</option>
+                <option value="mas5">Más de 5 minutos</option>
+                <option value="sin_preferencia">Sin preferencia</option>
+              </select>
+            </div>
+          </div>
+          <div class="f-group">
+            <label>¿Tenés referencias? (links de YouTube, Instagram, etc.)</label>
+            <input type="text" id="f_referencias" placeholder="Pegá links de videos que te gusten como referencia"/>
+          </div>
+          <div class="f-group">
+            <label>Descripción libre — contanos todo lo que quieras</label>
+            <textarea id="f_descripcion" placeholder="¿Qué momentos son importantes? ¿Hay personas especiales? ¿Algún mensaje que quieras transmitir?"></textarea>
+          </div>
+          <button type="submit" class="btn-gold" id="btnGuardarFormulario">Guardar ideas</button>
+        </form>
+      </div>
+
+      <a href="cliente.html" class="back-link">← Volver a mis fotos</a>
+    </div>
+
+    <!-- PASO 2: ARCHIVOS -->
+    <div class="paso-panel" id="paso-archivos">
+      <div class="card">
+        <h3>Subir fotos y videos</h3>
+        <div class="upload-zone" id="uploadZoneProyecto">
+          <p>📁 Arrastrá tus fotos o videos acá o <span>hacé clic para seleccionar</span></p>
+          <p class="size-note">Formatos: JPG, PNG, MP4, MOV · Máximo 100 MB por archivo</p>
+        </div>
+        <input type="file" id="fileInputProyecto" multiple accept="image/*,video/*"/>
+        <span id="rejectedFiles" style="display:none;"></span>
+        <div id="uploadStatusProyecto"></div>
+      </div>
+
+      <!-- Drive para archivos pesados -->
+      <div id="driveSection" style="display:none;">
+        <div class="drive-box">
+          <p>📦 Para archivos mayores a 100 MB (videos largos), subílos a nuestro Google Drive:</p>
+          <a href="#" id="driveLink" target="_blank" rel="noopener">📂 Abrir Google Drive compartido</a>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <h3>Archivos subidos</h3>
+        <p id="emptyArchivos" style="color:#555;font-size:0.85rem;">Todavía no subiste ningún archivo.</p>
+        <div class="archivos-grid" id="archivosSubidos"></div>
+      </div>
+    </div>
+
+    <!-- PASO 3: MENSAJES -->
+    <div class="paso-panel" id="paso-mensajes">
+      <div class="card">
+        <h3>Mensajes con Omar</h3>
+        <div id="listaComentarios"></div>
+        <div class="comentario-input">
+          <input type="text" id="inputComentario" placeholder="Escribí un mensaje..." />
+          <button class="btn-send" id="btnEnviarComentario">Enviar</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Navegación entre pasos
+    document.querySelectorAll(".nav-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".paso-panel").forEach(p => p.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById("paso-" + btn.dataset.paso).classList.add("active");
+      });
+    });
+  </script>
+  <script type="module" src="js/proyecto.js"></script>
+</body>
+</html>

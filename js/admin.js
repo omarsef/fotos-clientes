@@ -33,6 +33,19 @@ function init() {
       a.classList.add("active");
       document.getElementById("tab-" + a.dataset.tab).classList.add("active");
       if (a.dataset.tab === "analytics") cargarAnalytics();
+      if (a.dataset.tab === "proyectos") initProyectos();
+    });
+  });
+
+  // Sub-tabs dentro de "Subir Fotos"
+  document.querySelectorAll(".subtab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".subtab-btn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".subtab-panel").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById("subtab-" + btn.dataset.subtab).classList.add("active");
+      // Cargar grupos cuando se activa el sub-tab grupal
+      if (btn.dataset.subtab === "grupal") popularSelectGruposFotosGrupales();
     });
   });
 
@@ -520,10 +533,11 @@ window.editarCliente = async (uid) => {
   const u = snap.data();
 
   // Populate modal
-  document.getElementById("editUid").value       = uid;
-  document.getElementById("editNombre").value    = u.nombre || "";
-  document.getElementById("editEmail").value     = u.email  || "";
-  document.getElementById("editCategoria").value = u.categoria || "";
+  document.getElementById("editUid").value          = uid;
+  document.getElementById("editNombre").value       = u.nombre || "";
+  document.getElementById("editEmail").value        = u.email  || "";
+  document.getElementById("editCategoria").value    = u.categoria || "";
+  document.getElementById("editAudiovisual").checked = !!u.servicioAudiovisual;
 
   // Populate grupo select
   const gruposSnap = await getDocs(collection(db, "grupos"));
@@ -551,13 +565,14 @@ document.addEventListener("DOMContentLoaded", () => {
   if (form) {
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const uid      = document.getElementById("editUid").value;
-      const nombre   = document.getElementById("editNombre").value.trim();
-      const categoria= document.getElementById("editCategoria").value;
-      const grupoId  = document.getElementById("editGrupo").value;
+      const uid               = document.getElementById("editUid").value;
+      const nombre            = document.getElementById("editNombre").value.trim();
+      const categoria         = document.getElementById("editCategoria").value;
+      const grupoId           = document.getElementById("editGrupo").value;
+      const servicioAudiovisual = document.getElementById("editAudiovisual").checked;
 
       await updateDoc(doc(db, "usuarios", uid), {
-        nombre, categoria, grupoId: grupoId || null
+        nombre, categoria, grupoId: grupoId || null, servicioAudiovisual
       });
 
       cerrarEditModal();
@@ -663,4 +678,157 @@ window.eliminarFotoGrupal = async (id) => {
   if (!confirm("¿Eliminar esta foto grupal?")) return;
   await setDoc(doc(db, "fotosGrupales", id), { eliminado: true }, { merge: true });
   cargarFotosGrupalesAdmin();
+};
+
+// ══════════════════════════════════════════════════════
+// PROYECTOS AUDIOVISUALES
+// ══════════════════════════════════════════════════════
+
+// Inicializar cuando se entra a la tab
+function initProyectos() {
+  cargarProyectos();
+  cargarDriveLinkAdmin();
+
+  document.getElementById("btnGuardarDrive").addEventListener("click", async () => {
+    const link = document.getElementById("driveLinkAdmin").value.trim();
+    await setDoc(doc(db, "config", "general"), { driveLink: link }, { merge: true });
+    const msg = document.getElementById("msgDrive");
+    msg.style.display = "block";
+    setTimeout(() => { msg.style.display = "none"; }, 2500);
+  });
+}
+
+async function cargarDriveLinkAdmin() {
+  const snap = await getDoc(doc(db, "config", "general"));
+  if (snap.exists() && snap.data().driveLink) {
+    document.getElementById("driveLinkAdmin").value = snap.data().driveLink;
+  }
+}
+
+async function cargarProyectos() {
+  const container = document.getElementById("listaProyectos");
+  if (!container) return;
+  container.innerHTML = "<p style='color:#555'>Cargando...</p>";
+
+  const snap = await getDocs(collection(db, "proyectos"));
+  if (snap.empty) {
+    container.innerHTML = "<p style='color:#555'>No hay proyectos aún.</p>";
+    return;
+  }
+
+  const estadoMap = {
+    pendiente:  "⏳ Pendiente",
+    recibido:   "📬 Recibido",
+    en_edicion: "🎬 En edición",
+    revision:   "👀 Para revisar",
+    aprobado:   "✅ Aprobado"
+  };
+
+  container.innerHTML = "";
+  snap.forEach(d => {
+    const p   = d.data();
+    const div = document.createElement("div");
+    div.style.cssText = "background:#1a1a1a;border:1px solid #2a2a2a;border-radius:6px;padding:18px 20px;margin-bottom:12px;";
+    div.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <div>
+          <p style="color:#fff;font-size:0.95rem;">${p.nombre || "Sin nombre"}</p>
+          <p style="color:#666;font-size:0.8rem;margin-top:3px;">${p.archivos?.length || 0} archivo(s) subido(s)</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <select onchange="cambiarEstadoProyecto('${d.id}', this.value)" style="padding:7px 12px;background:#0d0d0d;border:1px solid #333;border-radius:4px;color:#fff;font-size:0.82rem;">
+            ${Object.entries(estadoMap).map(([k,v]) =>
+              `<option value="${k}" ${p.estado === k ? "selected" : ""}>${v}</option>`
+            ).join("")}
+          </select>
+          <button class="btn-gold" style="padding:7px 14px;font-size:0.78rem;" onclick="verProyecto('${d.id}')">Ver detalles</button>
+        </div>
+      </div>
+      ${p.formulario?.descripcion ? `<p style="color:#888;font-size:0.82rem;margin-top:10px;border-top:1px solid #222;padding-top:10px;">"${p.formulario.descripcion}"</p>` : ""}
+    `;
+    container.appendChild(div);
+  });
+}
+
+window.cambiarEstadoProyecto = async (id, estado) => {
+  await updateDoc(doc(db, "proyectos", id), { estado });
+};
+
+window.verProyecto = async (id) => {
+  const snap = await getDoc(doc(db, "proyectos", id));
+  if (!snap.exists()) return;
+  const p = snap.data();
+
+  const form = p.formulario || {};
+  const campos = [
+    ["Tipo de contenido", form.tipoContenido],
+    ["Estilo",            form.estilo],
+    ["Música",            form.musica],
+    ["Duración",          form.duracion],
+    ["Referencias",       form.referencias],
+    ["Descripción",       form.descripcion],
+  ].filter(([,v]) => v);
+
+  let html = `<div style="background:#161616;border:1px solid #333;border-radius:8px;padding:28px;max-width:540px;width:100%;max-height:85vh;overflow-y:auto;">`;
+  html += `<h3 style="color:#c9a84c;letter-spacing:2px;font-size:0.85rem;text-transform:uppercase;margin-bottom:16px;">Proyecto de ${p.nombre}</h3>`;
+
+  if (campos.length) {
+    html += `<div style="margin-bottom:16px;">`;
+    campos.forEach(([label, val]) => {
+      html += `<p style="margin-bottom:8px;"><span style="color:#888;font-size:0.78rem;text-transform:uppercase;letter-spacing:1px;">${label}:</span><br/><span style="color:#ddd;font-size:0.9rem;">${val}</span></p>`;
+    });
+    html += `</div>`;
+  }
+
+  if (p.archivos?.length) {
+    html += `<p style="color:#888;font-size:0.78rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Archivos (${p.archivos.length})</p>`;
+    html += `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;">`;
+    p.archivos.forEach(a => {
+      html += a.tipo === "video"
+        ? `<video src="${a.url}" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:4px;" controls></video>`
+        : `<img src="${a.url}" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:4px;" />`;
+    });
+    html += `</div>`;
+  }
+
+  // Mensajes
+  const comentarios = p.comentarios || [];
+  html += `<p style="color:#888;font-size:0.78rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Mensajes (${comentarios.length})</p>`;
+  if (comentarios.length) {
+    comentarios.forEach(c => {
+      html += `<p style="background:#0d0d0d;border-radius:4px;padding:8px 12px;margin-bottom:6px;font-size:0.85rem;color:#ccc;"><span style="color:#666;font-size:0.72rem;">${c.autor === "admin" ? "Vos" : p.nombre}:</span> ${c.texto}</p>`;
+    });
+  }
+
+  // Responder
+  html += `
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <input id="respuestaAdmin" type="text" placeholder="Escribí una respuesta..." style="flex:1;padding:9px 12px;background:#0d0d0d;border:1px solid #333;border-radius:4px;color:#fff;font-size:0.85rem;"/>
+      <button onclick="enviarRespuestaAdmin('${id}')" style="padding:9px 16px;background:#c9a84c;border:none;border-radius:4px;color:#000;font-weight:700;cursor:pointer;font-size:0.82rem;">Enviar</button>
+    </div>
+    <button onclick="document.getElementById('proyectoModal').remove()" style="margin-top:16px;width:100%;padding:10px;background:transparent;border:1px solid #333;border-radius:4px;color:#888;cursor:pointer;font-size:0.82rem;letter-spacing:1px;text-transform:uppercase;">Cerrar</button>
+  </div>`;
+
+  const modal = document.createElement("div");
+  modal.id = "proyectoModal";
+  modal.style.cssText = "position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;padding:20px;";
+  modal.innerHTML = html;
+  document.body.appendChild(modal);
+};
+
+window.enviarRespuestaAdmin = async (proyId) => {
+  const input  = document.getElementById("respuestaAdmin");
+  const texto  = input.value.trim();
+  if (!texto) return;
+
+  const snap = await getDoc(doc(db, "proyectos", proyId));
+  const comentarios = snap.data().comentarios || [];
+  comentarios.push({
+    autor: "admin", texto,
+    fecha: new Date().toLocaleDateString("es-AR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" })
+  });
+  await updateDoc(doc(db, "proyectos", proyId), { comentarios });
+  input.value = "";
+  document.getElementById("proyectoModal")?.remove();
+  verProyecto(proyId);
 };

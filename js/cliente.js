@@ -30,6 +30,12 @@ onAuthStateChanged(auth, async (user) => {
 
   cargarFotos();
   cargarFotosGrupales();
+
+  // Mostrar banner audiovisual si el admin activó el servicio
+  if (data.servicioAudiovisual) {
+    const banner = document.getElementById("bannerAudiovisual");
+    if (banner) banner.style.display = "block";
+  }
 });
 
 window.logout = async () => { await signOut(auth); window.location.href = "login.html"; };

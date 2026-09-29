@@ -67,6 +67,20 @@
     .tab-panel { display:none; }
     .tab-panel.active { display:block; }
 
+    /* Sub-tabs dentro de Subir Fotos */
+    .subtab-bar {
+      display:flex; gap:4px; margin-bottom:24px;
+      background:#111; border:1px solid #222; border-radius:6px; padding:4px;
+    }
+    .subtab-btn {
+      flex:1; padding:10px; border:none; background:transparent;
+      color:#888; font-size:0.82rem; letter-spacing:1px; text-transform:uppercase;
+      cursor:pointer; border-radius:4px; transition:all 0.2s;
+    }
+    .subtab-btn.active { background:#c9a84c; color:#000; font-weight:700; }
+    .subtab-panel { display:none; }
+    .subtab-panel.active { display:block; }
+
     /* Grupos */
     .grupo-header {
       display:flex; align-items:center; justify-content:space-between;
@@ -120,9 +134,9 @@
       <a href="#" class="active" data-tab="grupos">📁 Grupos</a>
       <a href="#" data-tab="usuarios">👤 Clientes</a>
       <a href="#" data-tab="subir">📤 Subir Fotos</a>
-      <a href="#" data-tab="fotosgrp">🖼 Fotos Grupales</a>
       <a href="#" data-tab="galerias">👁 Galerías</a>
       <a href="#" data-tab="selecciones">✅ Selecciones</a>
+      <a href="#" data-tab="proyectos">🎬 Proyectos</a>
       <a href="#" data-tab="analytics">📊 Analytics</a>
     </aside>
 
@@ -196,25 +210,55 @@
         </div>
       </div>
 
-      <!-- TAB: SUBIR FOTOS -->
+      <!-- TAB: SUBIR FOTOS (con sub-tabs) -->
       <div class="tab-panel" id="tab-subir">
         <h1>Subir Fotos</h1>
 
-        <div class="card">
-          <h3>Seleccionar cliente</h3>
-          <select class="input-field" id="clienteParaSubir">
-            <option value="">-- Seleccioná un cliente --</option>
-          </select>
+        <div class="subtab-bar">
+          <button class="subtab-btn active" data-subtab="personal">📷 Fotos Personales</button>
+          <button class="subtab-btn"        data-subtab="grupal">🖼 Fotos Grupales</button>
         </div>
 
-        <div class="card">
-          <h3>Cargar imágenes</h3>
-          <div class="upload-zone" id="uploadZone">
-            <p>📷 Arrastrá las fotos acá o <span>hacé clic para seleccionar</span></p>
-            <p style="margin-top:8px;font-size:0.78rem;color:#555;">Se subirán en baja calidad con marca de agua automáticamente</p>
+        <!-- SUB-TAB: PERSONALES -->
+        <div class="subtab-panel active" id="subtab-personal">
+          <div class="card">
+            <h3>Seleccionar cliente</h3>
+            <select class="input-field" id="clienteParaSubir">
+              <option value="">-- Seleccioná un cliente --</option>
+            </select>
           </div>
-          <input type="file" id="fileInput" multiple accept="image/*" />
-          <div id="uploadStatus"></div>
+          <div class="card">
+            <h3>Cargar imágenes</h3>
+            <div class="upload-zone" id="uploadZone">
+              <p>📷 Arrastrá las fotos acá o <span>hacé clic para seleccionar</span></p>
+              <p style="margin-top:8px;font-size:0.78rem;color:#555;">Se subirán en baja calidad con marca de agua automáticamente</p>
+            </div>
+            <input type="file" id="fileInput" multiple accept="image/*" />
+            <div id="uploadStatus"></div>
+          </div>
+        </div>
+
+        <!-- SUB-TAB: GRUPALES -->
+        <div class="subtab-panel" id="subtab-grupal">
+          <div class="card">
+            <h3>Seleccionar grupo</h3>
+            <select class="input-field" id="grupoParaFotosGrupales">
+              <option value="">-- Seleccioná un grupo --</option>
+            </select>
+          </div>
+          <div class="card">
+            <h3>Cargar fotos del grupo</h3>
+            <div class="upload-zone" id="uploadZoneGrupal">
+              <p>🖼 Arrastrá las fotos grupales acá o <span>hacé clic para seleccionar</span></p>
+              <p style="margin-top:8px;font-size:0.78rem;color:#555;">Fotos compartidas para todos los del grupo (acto, foto grupal, etc.)</p>
+            </div>
+            <input type="file" id="fileInputGrupal" multiple accept="image/*" />
+            <div id="uploadStatusGrupal"></div>
+          </div>
+          <div class="card">
+            <h3>Fotos grupales cargadas</h3>
+            <div id="galeriaGrupal" class="gallery-grid"></div>
+          </div>
         </div>
       </div>
 
@@ -250,30 +294,6 @@
         </div>
       </div>
 
-      <!-- TAB: FOTOS GRUPALES -->
-      <div class="tab-panel" id="tab-fotosgrp">
-        <h1>Fotos Grupales</h1>
-        <div class="card">
-          <h3>Seleccionar grupo</h3>
-          <select class="input-field" id="grupoParaFotosGrupales">
-            <option value="">-- Seleccioná un grupo --</option>
-          </select>
-        </div>
-        <div class="card">
-          <h3>Subir fotos del grupo</h3>
-          <div class="upload-zone" id="uploadZoneGrupal">
-            <p>🖼 Arrastrá las fotos grupales acá o <span>hacé clic para seleccionar</span></p>
-            <p style="margin-top:8px;font-size:0.78rem;color:#555;">Fotos en común para todos los clientes del grupo (fotos del acto, foto grupal, etc.)</p>
-          </div>
-          <input type="file" id="fileInputGrupal" multiple accept="image/*" />
-          <div id="uploadStatusGrupal"></div>
-        </div>
-        <div class="card">
-          <h3>Fotos grupales cargadas</h3>
-          <div id="galeriaGrupal" class="gallery-grid"></div>
-        </div>
-      </div>
-
       <!-- TAB: ANALYTICS -->
       <div class="tab-panel" id="tab-analytics">
         <h1>Analytics</h1>
@@ -297,6 +317,26 @@
           <h3>Fotos más seleccionadas</h3>
           <div id="analyticsGrid" class="analytics-grid"></div>
           <p id="msgAnalytics" style="color:#555;font-size:0.9rem;display:none;">No hay selecciones aún en este grupo.</p>
+        </div>
+      </div>
+
+      <!-- TAB: PROYECTOS AUDIOVISUALES -->
+      <div class="tab-panel" id="tab-proyectos">
+        <h1>Proyectos Audiovisuales</h1>
+
+        <div class="card">
+          <h3>Configuración general</h3>
+          <label style="font-size:0.78rem;color:#888;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:8px;">Link de Google Drive para archivos pesados</label>
+          <div style="display:flex;gap:10px;">
+            <input class="input-field" type="url" id="driveLinkAdmin" placeholder="https://drive.google.com/drive/folders/..." style="margin-bottom:0;flex:1;"/>
+            <button class="btn-gold" id="btnGuardarDrive">Guardar</button>
+          </div>
+          <p id="msgDrive" style="color:#6fcf97;font-size:0.82rem;margin-top:8px;display:none;">✅ Link guardado.</p>
+        </div>
+
+        <div class="card">
+          <h3>Proyectos recibidos</h3>
+          <div id="listaProyectos"><p style="color:#555">Cargando...</p></div>
         </div>
       </div>
 
@@ -324,6 +364,10 @@
         <select class="input-field" id="editGrupo" style="margin-top:6px;">
           <option value="">-- Sin grupo --</option>
         </select>
+        <label style="font-size:0.78rem;color:#888;letter-spacing:1px;text-transform:uppercase;margin-top:12px;display:flex;align-items:center;gap:10px;">
+          <input type="checkbox" id="editAudiovisual" style="width:auto;margin:0;accent-color:#c9a84c;"/>
+          Activar servicio audiovisual
+        </label>
         <div style="display:flex;gap:12px;margin-top:20px;">
           <button type="submit" class="btn-gold" style="flex:1;">Guardar cambios</button>
           <button type="button" onclick="cerrarEditModal()" class="btn-secondary" style="flex:1;">Cancelar</button>
