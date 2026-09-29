@@ -348,19 +348,39 @@ async function subirArchivosCliente(files) {
 }
 
 async function cargarArchivosCliente() {
-  const grid = document.getElementById("archivosClienteGrid");
+  if (!currentUser) return;
+  const grid    = document.getElementById("archivosClienteGrid");
+  const emptyEl = document.getElementById("emptyArchivos");
   if (!grid) return;
+
   const snap = await getDoc(doc(db, "contenidosClientes", currentUser.uid));
-  if (!snap.exists() || !snap.data().archivos?.length) return;
+  const archivos = snap.exists() ? (snap.data().archivos || []) : [];
 
   grid.innerHTML = "";
-  snap.data().archivos.forEach(a => {
+
+  if (archivos.length === 0) {
+    if (emptyEl) emptyEl.style.display = "block";
+    return;
+  }
+
+  if (emptyEl) emptyEl.style.display = "none";
+
+  archivos.forEach(a => {
     const div = document.createElement("div");
-    div.style.cssText = "position:relative;background:#1a1a1a;border:1px solid #222;border-radius:6px;overflow:hidden;aspect-ratio:4/3;";
-    div.innerHTML = a.tipo === "video"
-      ? `<video src="${a.url}" style="width:100%;height:100%;object-fit:cover;" muted></video>`
-      : `<img src="${a.url}" style="width:100%;height:100%;object-fit:cover;" draggable="false"/>`;
-    div.innerHTML += `<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.7);font-size:0.68rem;color:#ccc;padding:3px 6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.tipo === "video" ? "🎬" : "📷"} ${a.nombre}</div>`;
+    div.className = "archivo-item";
+    if (a.tipo === "video") {
+      div.innerHTML = `<video src="${a.url}" muted playsinline></video>`;
+    } else {
+      const img = document.createElement("img");
+      img.src = a.url;
+      img.alt = a.nombre;
+      img.draggable = false;
+      div.appendChild(img);
+    }
+    const label = document.createElement("div");
+    label.className = "archivo-label";
+    label.textContent = `${a.tipo === "video" ? "🎬" : "📷"} ${a.nombre}`;
+    div.appendChild(label);
     grid.appendChild(div);
   });
 }
