@@ -49,8 +49,8 @@ function init() {
       document.querySelectorAll(".subtab-panel").forEach(p => p.classList.remove("active"));
       btn.classList.add("active");
       document.getElementById("subtab-" + btn.dataset.subtab).classList.add("active");
-      // Cargar grupos cuando se activa el sub-tab grupal
-      if (btn.dataset.subtab === "grupal") popularSelectGruposFotosGrupales();
+      if (btn.dataset.subtab === "grupal")     popularSelectGruposFotosGrupales();
+      if (btn.dataset.subtab === "sinasignar") cargarFotosSinAsignar();
     });
   });
 
@@ -63,6 +63,7 @@ function init() {
   setupSelecciones();
   setupAnalytics();
   setupFotosGrupales();
+  setupSubirSinAsignar();
 
   // Filtro por grupo en tabla de clientes
   document.getElementById("filtroGrupoClientes").addEventListener("change", (e) => {
@@ -472,7 +473,6 @@ async function handleFiles(files) {
 function setupGaleriaAdmin() {
   // Filtrar al cambiar cliente
   document.getElementById("clienteParaGaleria").addEventListener("change", () => {
-    // Si se selecciona cliente, limpiar grupo y viceversa
     document.getElementById("grupoParaGaleria").value = "";
     cargarGaleriaAdmin();
   });
@@ -482,8 +482,6 @@ function setupGaleriaAdmin() {
     document.getElementById("clienteParaGaleria").value = "";
     const grupoId = document.getElementById("grupoParaGaleria").value;
     if (!grupoId) { cargarGaleriaAdmin(); return; }
-
-    // Obtener clientes del grupo y mostrar sus fotos
     const cSnap = await getDocs(query(
       collection(db, "usuarios"),
       where("grupoId", "==", grupoId),
@@ -491,6 +489,76 @@ function setupGaleriaAdmin() {
     ));
     const clienteIds = cSnap.docs.map(d => d.id);
     cargarGaleriaAdmin(null, clienteIds);
+  });
+
+  // ── Modo eliminar múltiple ────────────────────────────────
+  const galeriaContainer = document.getElementById("galeriaAdmin");
+  const deleteBar        = document.getElementById("deleteBar");
+  const deleteBarCount   = document.getElementById("deleteBarCount");
+  let   modoEliminar     = false;
+
+  function actualizarDeleteBar() {
+    const marcadas = galeriaContainer.querySelectorAll(".gallery-item.para-borrar").length;
+    deleteBarCount.textContent = marcadas;
+    deleteBar.classList.toggle("visible", marcadas > 0);
+  }
+
+  document.getElementById("btnModoEliminar").addEventListener("click", () => {
+    modoEliminar = !modoEliminar;
+    galeriaContainer.classList.toggle("galeria-modo-eliminar", modoEliminar);
+    document.getElementById("btnModoEliminar").textContent = modoEliminar
+      ? "✕ Salir del modo eliminar"
+      : "☑ Seleccionar para eliminar";
+    // Limpiar selección al activar/desactivar
+    galeriaContainer.querySelectorAll(".gallery-item.para-borrar").forEach(el => {
+      el.classList.remove("para-borrar");
+      const cb = el.querySelector(".del-check");
+      if (cb) cb.checked = false;
+    });
+    deleteBar.classList.remove("visible");
+  });
+
+  // Delegación de clicks en checkboxes
+  galeriaContainer.addEventListener("change", e => {
+    if (!e.target.classList.contains("del-check")) return;
+    const item = e.target.closest(".gallery-item");
+    if (!item) return;
+    item.classList.toggle("para-borrar", e.target.checked);
+    actualizarDeleteBar();
+  });
+
+  document.getElementById("btnCancelarEliminar").addEventListener("click", () => {
+    galeriaContainer.querySelectorAll(".gallery-item.para-borrar").forEach(el => {
+      el.classList.remove("para-borrar");
+      const cb = el.querySelector(".del-check");
+      if (cb) cb.checked = false;
+    });
+    deleteBar.classList.remove("visible");
+  });
+
+  document.getElementById("btnEliminarSeleccionadas").addEventListener("click", async () => {
+    const items = [...galeriaContainer.querySelectorAll(".gallery-item.para-borrar")];
+    if (items.length === 0) return;
+    if (!confirm(`¿Eliminar ${items.length} foto(s)? Esta acción no se puede deshacer.`)) return;
+
+    const btn = document.getElementById("btnEliminarSeleccionadas");
+    btn.disabled = true;
+    btn.textContent = "Eliminando...";
+
+    for (const item of items) {
+      const fotoId = item.dataset.fotoId;
+      if (fotoId) await deleteDoc(doc(db, "fotos", fotoId));
+      item.remove();
+    }
+
+    deleteBar.classList.remove("visible");
+    btn.disabled = false;
+    btn.textContent = "🗑 Eliminar seleccionadas";
+
+    // Actualizar contador
+    const restantes = galeriaContainer.querySelectorAll(".gallery-item").length;
+    const contador  = document.getElementById("galeriaContador");
+    if (contador) contador.textContent = `${restantes} foto(s)`;
   });
 }
 
@@ -579,10 +647,12 @@ async function cargarGaleriaAdmin(clienteId = null, clienteIds = null) {
     const div    = document.createElement("div");
     div.className    = "gallery-item" + (foto.seleccionada ? " selected" : "");
     div.dataset.info = tooltipHtml({ cliente: info.nombre, grupo: info.grupo, fecha, seleccionada: foto.seleccionada });
+    div.dataset.fotoId = d.id;  // necesario para eliminación múltiple
     div.innerHTML    = `
       <img src="${foto.url}" alt="foto" />
       <div class="check">✓</div>
       <button class="btn-delete-foto" title="Eliminar foto" onclick="eliminarFoto('${d.id}', this)">🗑️</button>
+      <input type="checkbox" class="del-check" title="Marcar para eliminar" />
     `;
     container.appendChild(div);
   });
@@ -902,6 +972,108 @@ window.eliminarFotoGrupal = async (id) => {
   if (!confirm("¿Eliminar esta foto grupal?")) return;
   await setDoc(doc(db, "fotosGrupales", id), { eliminado: true }, { merge: true });
   cargarFotosGrupalesAdmin();
+};
+
+// ══════════════════════════════════════════════════════
+// FOTOS SIN ASIGNAR
+// ══════════════════════════════════════════════════════
+function setupSubirSinAsignar() {
+  const zone  = document.getElementById("uploadZoneSinAsignar");
+  const input = document.getElementById("fileInputSinAsignar");
+  if (!zone || !input) return;
+
+  zone.addEventListener("click", () => input.click());
+  zone.addEventListener("dragover", e => { e.preventDefault(); zone.style.borderColor = "#c9a84c"; });
+  zone.addEventListener("dragleave", () => { zone.style.borderColor = "#333"; });
+  zone.addEventListener("drop", e => {
+    e.preventDefault();
+    zone.style.borderColor = "#333";
+    handleFilesSinAsignar(e.dataTransfer.files);
+  });
+  input.addEventListener("change", () => handleFilesSinAsignar(input.files));
+}
+
+async function handleFilesSinAsignar(files) {
+  const statusEl = document.getElementById("uploadStatusSinAsignar");
+  const total    = files.length;
+  let   done     = 0;
+
+  statusEl.innerHTML = `
+    <p style="margin-top:12px;color:#aaa">Subiendo ${total} foto(s)...</p>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="progBarSinAsignar"></div></div>
+  `;
+
+  for (const file of files) {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+    formData.append("folder", "sinasignar");
+    formData.append("quality", "40");
+    formData.append("width", "1200");
+    formData.append("crop", "limit");
+
+    try {
+      const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, { method: "POST", body: formData });
+      const data = await res.json();
+
+      if (data.secure_url) {
+        const fotoId = data.public_id.replace(/\//g, "_");
+        await setDoc(doc(db, "fotosSinAsignar", fotoId), {
+          url: data.secure_url, publicId: data.public_id,
+          uploadedAt: new Date()
+        });
+      }
+    } catch (err) {
+      console.error("Error subiendo foto sin asignar:", err);
+    }
+
+    done++;
+    const bar = document.getElementById("progBarSinAsignar");
+    if (bar) bar.style.width = Math.round((done / total) * 100) + "%";
+  }
+
+  statusEl.innerHTML += `<p style="color:#6fcf97;margin-top:8px;">✅ ${done} foto(s) subidas.</p>`;
+  cargarFotosSinAsignar();
+}
+
+async function cargarFotosSinAsignar() {
+  const container = document.getElementById("galeriaSinAsignar");
+  const empty     = document.getElementById("emptySinAsignar");
+  const contador  = document.getElementById("contadorSinAsignar");
+  if (!container) return;
+
+  container.innerHTML = "<p style='color:#555'>Cargando...</p>";
+  const snap = await getDocs(collection(db, "fotosSinAsignar"));
+
+  container.innerHTML = "";
+  if (snap.empty) {
+    empty.style.display = "block";
+    contador.textContent = "";
+    return;
+  }
+
+  empty.style.display = "none";
+  contador.textContent = `${snap.size} foto(s)`;
+
+  snap.forEach(d => {
+    const foto  = d.data();
+    const fecha = foto.uploadedAt?.toDate ? foto.uploadedAt.toDate().toLocaleDateString("es-AR") : "-";
+    const div   = document.createElement("div");
+    div.className    = "gallery-item";
+    div.dataset.info = tooltipHtml({ tipo: "Sin asignar", fecha });
+    div.innerHTML    = `
+      <img src="${foto.url}" alt="foto" />
+      <button class="btn-delete-foto" title="Eliminar foto" onclick="eliminarFotoSinAsignar('${d.id}', this)">🗑️</button>
+    `;
+    container.appendChild(div);
+  });
+}
+
+window.eliminarFotoSinAsignar = async (fotoId, btn) => {
+  if (!confirm("¿Eliminar esta foto?")) return;
+  btn.disabled = true;
+  await deleteDoc(doc(db, "fotosSinAsignar", fotoId));
+  btn.closest(".gallery-item").remove();
 };
 
 // ══════════════════════════════════════════════════════

@@ -134,6 +134,38 @@
     }
     .stat-box .num { font-size:2rem; font-weight:700; color:#c9a84c; }
     .stat-box .lbl { color:#666; font-size:0.78rem; letter-spacing:1px; text-transform:uppercase; margin-top:4px; }
+
+    /* Barra de eliminación múltiple en galería */
+    .delete-bar {
+      display: none;
+      align-items: center;
+      gap: 14px;
+      background: #1e0f0f;
+      border: 1px solid #5a1a1a;
+      border-radius: 6px;
+      padding: 12px 18px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .delete-bar.visible { display: flex; }
+    .delete-bar span { color: #e07070; font-size: 0.88rem; flex: 1; }
+    .delete-bar strong { color: #fff; }
+
+    /* Checkbox de selección para eliminar */
+    .gallery-item .del-check {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      width: 22px;
+      height: 22px;
+      accent-color: #c0392b;
+      cursor: pointer;
+      display: none;
+      z-index: 15;
+    }
+    .galeria-modo-eliminar .gallery-item .del-check { display: block; }
+    .galeria-modo-eliminar .gallery-item.para-borrar { outline: 3px solid #c0392b; }
+    .galeria-modo-eliminar .btn-delete-foto { display: none !important; }
   </style>
 </head>
 <body>
@@ -243,6 +275,7 @@
         <div class="subtab-bar">
           <button class="subtab-btn active" data-subtab="personal">📷 Fotos Personales</button>
           <button class="subtab-btn"        data-subtab="grupal">🖼 Fotos Grupales</button>
+          <button class="subtab-btn"        data-subtab="sinasignar">📌 Sin asignar</button>
         </div>
 
         <!-- SUB-TAB: PERSONALES -->
@@ -295,6 +328,26 @@
             <div id="galeriaGrupal" class="gallery-grid"></div>
           </div>
         </div>
+
+        <!-- SUB-TAB: SIN ASIGNAR -->
+        <div class="subtab-panel" id="subtab-sinasignar">
+          <div class="card">
+            <h3>Cargar imágenes sin asignar a cliente ni grupo</h3>
+            <p style="color:#666;font-size:0.85rem;margin-bottom:16px;">Útil para subir fotos que después vas a asignar, o para uso interno.</p>
+            <div class="upload-zone" id="uploadZoneSinAsignar">
+              <p>📷 Arrastrá las fotos acá o <span>hacé clic para seleccionar</span></p>
+              <p style="margin-top:8px;font-size:0.78rem;color:#555;">Se subirán a Cloudinary sin asociarse a ningún cliente</p>
+            </div>
+            <input type="file" id="fileInputSinAsignar" multiple accept="image/*" />
+            <div id="uploadStatusSinAsignar"></div>
+          </div>
+          <div class="card">
+            <h3>Fotos sin asignar</h3>
+            <p id="contadorSinAsignar" style="color:#666;font-size:0.82rem;margin-bottom:12px;"></p>
+            <div id="galeriaSinAsignar" class="gallery-grid"></div>
+            <p id="emptySinAsignar" style="color:#555;font-size:0.85rem;display:none;">No hay fotos sin asignar.</p>
+          </div>
+        </div>
       </div>
 
       <!-- TAB: GALERIAS -->
@@ -315,8 +368,15 @@
           </div>
         </div>
         <div class="card">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
             <p id="galeriaContador" style="color:#666;font-size:0.82rem;letter-spacing:1px;"></p>
+            <button class="btn-danger" id="btnModoEliminar">☑ Seleccionar para eliminar</button>
+          </div>
+          <!-- Barra de acciones de eliminación múltiple -->
+          <div class="delete-bar" id="deleteBar">
+            <span><strong id="deleteBarCount">0</strong> foto(s) seleccionada(s) para eliminar</span>
+            <button class="btn-danger" id="btnEliminarSeleccionadas">🗑 Eliminar seleccionadas</button>
+            <button class="btn-secondary" id="btnCancelarEliminar">Cancelar</button>
           </div>
           <div id="galeriaAdmin" class="gallery-grid"></div>
           <p id="galeriaEmpty" style="color:#555;font-size:0.9rem;display:none;">No hay fotos para mostrar.</p>
